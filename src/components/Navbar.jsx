@@ -1,30 +1,60 @@
 import React, { useState, useEffect, memo } from 'react';
 import { motion } from 'framer-motion';
+import BookCallModal from './BookCallModal';
+import { scrollToAndHighlight } from '../utils/scroll';
 
 const Navbar = memo(() => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activeSection, setActiveSection] = useState('home');
 
-  // Detect scroll to apply glassmorphism effect
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 50);
+      setIsScrolled(window.scrollY > 24);
     };
 
     window.addEventListener('scroll', handleScroll);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Navigation links
+  useEffect(() => {
+    const sections = ['home', 'about', 'services', 'skills', 'projects', 'contact'];
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setActiveSection(entry.target.id);
+          }
+        });
+      },
+      { rootMargin: '-45% 0px -45% 0px', threshold: 0.2 }
+    );
+
+    sections.forEach((id) => {
+      const element = document.getElementById(id);
+      if (element) observer.observe(element);
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
   const navLinks = [
     { name: 'Home', href: '#home' },
     { name: 'About', href: '#about' },
     { name: 'Services', href: '#services' },
+    { name: 'Skills', href: '#skills' },
     { name: 'Projects', href: '#projects' },
     { name: 'Contact', href: '#contact' },
   ];
 
-  // Navbar animation - fade down on page load
+  const handleNavClick = (event, href) => {
+    event.preventDefault();
+    const sectionId = href.replace('#', '');
+    scrollToAndHighlight(sectionId);
+    setIsMobileMenuOpen(false);
+  };
+
   const navbarVariants = {
     initial: { y: -100, opacity: 0 },
     animate: {
@@ -34,7 +64,6 @@ const Navbar = memo(() => {
     },
   };
 
-  // Link underline hover animation
   const linkVariants = {
     initial: { width: 0 },
     hover: { width: '100%', transition: { duration: 0.3 } },
@@ -45,10 +74,10 @@ const Navbar = memo(() => {
       variants={navbarVariants}
       initial="initial"
       animate="animate"
-      className={`fixed top-0 left-0 right-0 z-50 px-4 md:px-8 py-4 transition-all duration-500 ${
+      className={`fixed top-0 left-0 right-0 z-50 px-4 md:px-8 transition-all duration-500 ${
         isScrolled
-          ? 'bg-[rgba(2,6,23,0.7)] backdrop-blur-md border-b border-[rgba(0,217,255,0.1)]'
-          : 'bg-transparent'
+          ? 'py-2.5 bg-[rgba(2,6,23,0.7)] backdrop-blur-md border-b border-[rgba(0,217,255,0.1)]'
+          : 'py-4 bg-transparent'
       }`}
       style={{ willChange: 'background, border-color' }}
     >
@@ -60,6 +89,15 @@ const Navbar = memo(() => {
           transition={{ delay: 0.2, duration: 0.5 }}
           className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-[#0099ff] via-[#00d9ff] to-[#a855f7] bg-clip-text text-transparent cursor-pointer"
           style={{ willChange: 'transform, opacity' }}
+          onClick={(event) => handleNavClick(event, '#home')}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+              handleNavClick(event, '#home');
+            }
+          }}
+          aria-label="Navigate to home section"
         >
           Diksha
         </motion.div>
@@ -77,12 +115,16 @@ const Navbar = memo(() => {
             >
               <a
                 href={link.href}
-                className="text-gray-300 hover:text-white transition-colors duration-300 text-sm font-medium tracking-wide"
+                onClick={(event) => handleNavClick(event, link.href)}
+                aria-label={`Go to ${link.name} section`}
+                aria-current={activeSection === link.href.slice(1) ? 'page' : undefined}
+                className={`transition-colors duration-300 text-sm font-medium tracking-wide focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 rounded-md px-1 py-1 ${
+                  activeSection === link.href.slice(1) ? 'text-white' : 'text-gray-300 hover:text-white'
+                }`}
               >
                 {link.name}
               </a>
 
-              {/* Smooth hover underline */}
               <motion.div
                 variants={linkVariants}
                 initial="initial"
@@ -90,6 +132,14 @@ const Navbar = memo(() => {
                 className="absolute bottom-0 left-0 h-0.5 bg-gradient-to-r from-[#0099ff] to-[#00d9ff]"
                 style={{ willChange: 'width' }}
               />
+
+              {activeSection === link.href.slice(1) && (
+                <motion.div
+                  layoutId="nav-active-indicator"
+                  className="absolute -bottom-1.5 left-0 h-0.5 w-full rounded-full bg-gradient-to-r from-[#0099ff] to-[#00d9ff]"
+                  transition={{ type: 'spring', stiffness: 420, damping: 34 }}
+                />
+              )}
             </motion.div>
           ))}
         </div>
@@ -102,9 +152,12 @@ const Navbar = memo(() => {
           className="hidden md:block"
         >
           <motion.button
+            type="button"
+            onClick={() => setIsModalOpen(true)}
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
-            className="relative px-6 py-2.5 text-sm font-semibold text-white rounded-lg overflow-hidden group"
+            aria-label="Open book a call modal"
+            className="relative px-6 py-2.5 text-sm font-semibold text-white rounded-lg overflow-hidden group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
             style={{ willChange: 'transform' }}
           >
             {/* Base gradient background */}
@@ -132,16 +185,16 @@ const Navbar = memo(() => {
           </motion.button>
         </motion.div>
 
-        {/* Mobile Menu Hamburger Button */}
         <motion.button
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3 }}
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          className="md:hidden relative w-8 h-8 flex flex-col justify-center items-center gap-1.5"
+          className="md:hidden relative w-8 h-8 flex flex-col justify-center items-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 rounded"
           aria-label="Toggle mobile menu"
+          aria-expanded={isMobileMenuOpen}
+          aria-controls="mobile-menu"
         >
-          {/* Hamburger lines with animation */}
           <motion.span
             animate={isMobileMenuOpen ? { rotate: 45, y: 8 } : { rotate: 0, y: 0 }}
             className="w-6 h-0.5 bg-gradient-to-r from-[#0099ff] to-[#00d9ff] rounded-full"
@@ -160,8 +213,8 @@ const Navbar = memo(() => {
         </motion.button>
       </div>
 
-      {/* Mobile Navigation Menu */}
       <motion.div
+        id="mobile-menu"
         initial={{ opacity: 0, height: 0 }}
         animate={
           isMobileMenuOpen
@@ -175,7 +228,6 @@ const Navbar = memo(() => {
           className="flex flex-col gap-4 pt-4 pb-4 bg-[rgba(2,6,23,0.9)] backdrop-blur-lg rounded-lg mt-4 px-4 py-5 border border-[rgba(0,217,255,0.15)]"
           style={{ willChange: 'background, border-color' }}
         >
-          {/* Mobile Navigation Links */}
           {navLinks.map((link, index) => (
             <motion.a
               key={link.name}
@@ -187,16 +239,24 @@ const Navbar = memo(() => {
                   : { opacity: 0, x: -10 }
               }
               transition={{ delay: index * 0.08 }}
-              onClick={() => setIsMobileMenuOpen(false)}
-              className="text-gray-300 hover:text-[#00d9ff] transition-colors duration-300 text-sm font-medium py-2.5"
+              onClick={(event) => handleNavClick(event, link.href)}
+              aria-label={`Go to ${link.name} section`}
+              aria-current={activeSection === link.href.slice(1) ? 'page' : undefined}
+              className={`transition-colors duration-300 text-sm font-medium py-2.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 rounded px-1 ${
+                activeSection === link.href.slice(1) ? 'text-[#00d9ff]' : 'text-gray-300 hover:text-[#00d9ff]'
+              }`}
               style={{ willChange: 'color, transform' }}
             >
               {link.name}
             </motion.a>
           ))}
 
-          {/* Mobile Book a Call Button */}
           <motion.button
+            type="button"
+            onClick={() => {
+              setIsModalOpen(true);
+              setIsMobileMenuOpen(false);
+            }}
             initial={{ opacity: 0, x: -10 }}
             animate={
               isMobileMenuOpen
@@ -206,7 +266,8 @@ const Navbar = memo(() => {
             transition={{ delay: navLinks.length * 0.08 }}
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="relative px-4 py-2.5 text-sm font-semibold text-white rounded-lg overflow-hidden group mt-2"
+            aria-label="Open book a call modal"
+            className="relative px-4 py-2.5 text-sm font-semibold text-white rounded-lg overflow-hidden group mt-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
             style={{ willChange: 'transform' }}
           >
             {/* Base gradient background */}
@@ -220,6 +281,8 @@ const Navbar = memo(() => {
           </motion.button>
         </motion.div>
       </motion.div>
+
+      <BookCallModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} />
     </motion.nav>
   );
 });

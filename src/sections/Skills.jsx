@@ -1,35 +1,53 @@
-import React, { memo, useState } from 'react';
+import React, { memo } from 'react';
 import { motion } from 'framer-motion';
 import SectionBackground from '../components/SectionBackground';
-import BookCallModal from '../components/BookCallModal';
 
 const Skills = memo(() => {
-  const [isBookCallOpen, setIsBookCallOpen] = useState(false);
-
   const skillCategories = [
     {
       category: 'Automation',
-      skills: ['Make.com', 'Zapier', 'IFTTT', 'n8n', 'Custom Workflows'],
+      skills: [
+        { name: 'Make.com', level: 95, description: 'Scenario orchestration and operations automation' },
+        { name: 'Google Sheets', level: 88, description: 'Automated reporting and live workflow logs' },
+        { name: 'Webhooks', level: 92, description: 'Real-time trigger and event architecture' },
+      ],
     },
     {
-      category: 'AI & ML',
-      skills: ['ChatGPT', 'Claude', 'OpenAI API', 'LLMs', 'AI Integration'],
+      category: 'AI',
+      skills: [
+        { name: 'OpenAI', level: 91, description: 'AI-powered processing and automation intelligence' },
+        { name: 'AI Agents', level: 87, description: 'Context-aware assistants and execution logic' },
+      ],
     },
     {
-      category: 'Integration',
-      skills: ['REST APIs', 'Webhooks', 'OAuth', 'Graph APIs', 'Custom Scripts'],
+      category: 'APIs',
+      skills: [
+        { name: 'REST APIs', level: 90, description: 'Reliable integrations and endpoint workflows' },
+        { name: 'API Integration', level: 89, description: 'Multi-tool data flow and system sync' },
+      ],
     },
     {
-      category: 'Platforms',
-      skills: ['CRM Systems', 'Email Marketing', 'Project Management', 'Data Tools', 'Analytics'],
+      category: 'Frontend',
+      skills: [
+        { name: 'React', level: 84, description: 'Automation dashboards and interactive UI' },
+        { name: 'Tailwind', level: 86, description: 'Scalable utility-first styling systems' },
+        { name: 'HTML', level: 90, description: 'Semantic and accessible structure' },
+        { name: 'CSS', level: 88, description: 'Responsive UI and visual polish' },
+      ],
     },
     {
-      category: 'Technical',
-      skills: ['JavaScript', 'Python', 'JSON', 'SQL', 'Debugging'],
+      category: 'Tools',
+      skills: [
+        { name: 'Git', level: 82, description: 'Version control and team collaboration' },
+        { name: 'GitHub', level: 84, description: 'Repository workflows and project delivery' },
+        { name: 'Vercel', level: 80, description: 'Deployment and production hosting' },
+      ],
     },
     {
-      category: 'Business',
-      skills: ['Process Analysis', 'Consulting', 'Project Management', 'Documentation', 'Training'],
+      category: 'Languages',
+      skills: [
+        { name: 'JavaScript', level: 90, description: 'Core scripting for automation and frontend logic' },
+      ],
     },
   ];
 
@@ -73,7 +91,7 @@ const Skills = memo(() => {
           </motion.h2>
           <motion.div className="h-1.5 w-24 bg-gradient-to-r from-[#0099ff] to-[#00d9ff] mx-auto rounded-full mb-6" />
           <p className="text-gray-300 text-lg max-w-2xl mx-auto leading-relaxed font-light">
-            A comprehensive toolkit of automation, AI, and integration expertise
+            Structured expertise across automation, AI, APIs, frontend engineering, and delivery tools.
           </p>
         </motion.div>
 
@@ -103,7 +121,6 @@ const Skills = memo(() => {
                   backgroundSize: '200% 200%',
                 }}
               />
-              {/* Category Title */}
               <motion.h3
                 initial={{ opacity: 0 }}
                 whileInView={{ opacity: 1 }}
@@ -113,11 +130,10 @@ const Skills = memo(() => {
                 {category.category}
               </motion.h3>
 
-              {/* Skills */}
-              <div className="flex flex-wrap gap-3 relative z-10">
+              <div className="space-y-4 relative z-10">
                 {category.skills.map((skill, skillIndex) => (
-                  <motion.span
-                    key={skill}
+                  <motion.div
+                    key={skill.name}
                     variants={skillBadgeVariants}
                     initial="initial"
                     whileInView="animate"
@@ -127,11 +143,39 @@ const Skills = memo(() => {
                       delay: categoryIndex * 0.1 + skillIndex * 0.05,
                       duration: 0.4,
                     }}
-                    className="px-4 py-2.5 rounded-full bg-gradient-to-br from-[rgba(0,217,255,0.12)] to-[rgba(0,217,255,0.06)] border border-[rgba(0,217,255,0.25)] text-sm text-[#00d9ff] hover:border-[rgba(0,217,255,0.5)] hover:bg-gradient-to-br hover:from-[rgba(0,217,255,0.2)] hover:to-[rgba(0,217,255,0.12)] transition-all duration-300 shadow-lg shadow-[rgba(0,217,255,0.1)] hover:shadow-[rgba(0,217,255,0.2)] font-medium cursor-default"
+                    className="group/skill"
                     style={{ willChange: 'transform, background-color, border-color' }}
                   >
-                    {skill}
-                  </motion.span>
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <span
+                          className="px-3 py-1.5 rounded-full bg-gradient-to-br from-[rgba(0,217,255,0.12)] to-[rgba(0,217,255,0.06)] border border-[rgba(0,217,255,0.25)] text-xs text-[#00d9ff] hover:border-[rgba(0,217,255,0.5)] transition-all duration-300 shadow-lg shadow-[rgba(0,217,255,0.1)] font-medium cursor-default"
+                          title={skill.description}
+                          aria-label={`${skill.name}: ${skill.description}`}
+                        >
+                          {skill.name}
+                        </span>
+                        <span
+                          className="opacity-0 group-hover/skill:opacity-100 transition-opacity duration-300 text-[11px] text-cyan-100/90"
+                          role="tooltip"
+                        >
+                          {skill.description}
+                        </span>
+                      </div>
+                      <span className="text-xs font-semibold text-cyan-200">{skill.level}%</span>
+                    </div>
+
+                    <div className="h-2 bg-[rgba(0,217,255,0.08)] rounded-full overflow-hidden border border-[rgba(0,217,255,0.1)]">
+                      <motion.div
+                        className="h-full bg-gradient-to-r from-[#0099ff] to-[#00d9ff] rounded-full shadow-lg shadow-[#00d9ff]/30"
+                        initial={{ width: 0 }}
+                        whileInView={{ width: `${skill.level}%` }}
+                        transition={{ duration: 1.2, delay: categoryIndex * 0.08 + skillIndex * 0.05, ease: 'easeOut' }}
+                        viewport={{ once: true }}
+                        style={{ willChange: 'width' }}
+                      />
+                    </div>
+                  </motion.div>
                 ))}
               </div>
             </motion.div>
@@ -148,9 +192,9 @@ const Skills = memo(() => {
           <div className="space-y-8">
             {[
               { label: 'Workflow Automation', value: 95 },
-              { label: 'AI Integration', value: 90 },
-              { label: 'API Development', value: 88 },
-              { label: 'Problem Solving', value: 92 },
+              { label: 'AI Integration', value: 91 },
+              { label: 'API Systems', value: 90 },
+              { label: 'Frontend Delivery', value: 86 },
             ].map((skill, index) => (
               <motion.div
                 key={skill.label}
@@ -180,9 +224,6 @@ const Skills = memo(() => {
           </div>
         </motion.div>
       </motion.div>
-
-      {/* Book Call Modal */}
-      <BookCallModal isOpen={isBookCallOpen} onClose={() => setIsBookCallOpen(false)} />
 
       {/* Section Divider */}
       <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[rgba(0,217,255,0.2)] to-transparent" />

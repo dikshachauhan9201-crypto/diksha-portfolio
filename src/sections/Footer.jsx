@@ -1,22 +1,32 @@
 import React, { memo } from 'react';
 import { motion } from 'framer-motion';
+import { scrollToAndHighlight } from '../utils/scroll';
 
 const Footer = memo(() => {
   const currentYear = new Date().getFullYear();
+  const stars = Array.from({ length: 36 }).map((_, index) => ({
+    id: index,
+    left: (index * 17) % 100,
+    top: (index * 23) % 100,
+    size: ((index % 3) + 1) * 0.9,
+    duration: 4 + (index % 7),
+  }));
 
   const quickLinks = [
-    { name: 'Home', href: '#' },
+    { name: 'Home', href: '#home' },
     { name: 'About', href: '#about' },
     { name: 'Services', href: '#services' },
+    { name: 'Skills', href: '#skills' },
     { name: 'Projects', href: '#projects' },
+    { name: 'Contact', href: '#contact' },
   ];
 
-  const services = [
-    'Workflow Automation',
-    'AI Integration',
-    'Process Optimization',
-    'API Integration',
-    'Custom Automation',
+  const resources = [
+    { name: 'Email', href: 'mailto:dikshachauhan9201@gmail.com' },
+    { name: 'Phone', href: 'tel:+919217682198' },
+    { name: 'LinkedIn', href: 'https://linkedin.com/in/diksha-chauhan-465559403' },
+    { name: 'GitHub (Coming Soon)', href: null },
+    { name: 'Resume', href: '/resume.pdf', download: true },
   ];
 
   const social = [
@@ -26,7 +36,12 @@ const Footer = memo(() => {
   ];
 
   const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    scrollToAndHighlight('home');
+  };
+
+  const handleQuickLinkClick = (event, href) => {
+    event.preventDefault();
+    scrollToAndHighlight(href.replace('#', ''));
   };
 
   const containerVariants = {
@@ -57,6 +72,22 @@ const Footer = memo(() => {
         transition={{ duration: 15, repeat: Infinity }}
       />
 
+      {stars.map((star) => (
+        <motion.div
+          key={star.id}
+          className="absolute rounded-full bg-white pointer-events-none"
+          style={{
+            left: `${star.left}%`,
+            top: `${star.top}%`,
+            width: `${star.size}px`,
+            height: `${star.size}px`,
+            opacity: 0.12,
+          }}
+          animate={{ opacity: [0.08, 0.32, 0.08], y: [0, -2, 0] }}
+          transition={{ duration: star.duration, repeat: Infinity, ease: 'easeInOut' }}
+        />
+      ))}
+
       {/* Main Content */}
       <motion.div
         variants={containerVariants}
@@ -77,7 +108,6 @@ const Footer = memo(() => {
             </p>
           </motion.div>
 
-          {/* Quick Links */}
           <motion.div variants={itemVariants} className="col-span-1">
             <h4 className="text-white font-bold mb-6 tracking-wide">Quick Links</h4>
             <ul className="space-y-3">
@@ -85,8 +115,10 @@ const Footer = memo(() => {
                 <li key={link.name}>
                   <motion.a
                     href={link.href}
+                    onClick={(event) => handleQuickLinkClick(event, link.href)}
                     whileHover={{ x: 4, color: '#00d9ff' }}
-                    className="text-gray-400 text-sm hover:text-[#00d9ff] transition-colors duration-300"
+                    aria-label={`Go to ${link.name} section`}
+                    className="text-gray-400 text-sm hover:text-[#00d9ff] transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 rounded"
                   >
                     {link.name}
                   </motion.a>
@@ -95,18 +127,22 @@ const Footer = memo(() => {
             </ul>
           </motion.div>
 
-          {/* Services */}
           <motion.div variants={itemVariants} className="col-span-1">
-            <h4 className="text-white font-bold mb-6 tracking-wide">Services</h4>
+            <h4 className="text-white font-bold mb-6 tracking-wide">Resources</h4>
             <ul className="space-y-3">
-              {services.map((service) => (
-                <li key={service}>
-                  <motion.span
+              {resources.map((resource) => (
+                <li key={resource.name}>
+                  <motion.a
+                    href={resource.href || undefined}
+                    download={resource.download ? 'Diksha-Chauhan-Resume.pdf' : undefined}
+                    target={resource.name === 'LinkedIn' ? '_blank' : undefined}
+                    rel={resource.name === 'LinkedIn' ? 'noopener noreferrer' : undefined}
                     whileHover={{ x: 4, color: '#00d9ff' }}
-                    className="text-gray-400 text-sm hover:text-[#00d9ff] transition-colors duration-300 cursor-default block"
+                    aria-label={resource.href ? resource.name : `${resource.name} not available yet`}
+                    className="text-gray-400 text-sm hover:text-[#00d9ff] transition-colors duration-300 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 rounded"
                   >
-                    {service}
-                  </motion.span>
+                    {resource.name}
+                  </motion.a>
                 </li>
               ))}
             </ul>
@@ -124,8 +160,11 @@ const Footer = memo(() => {
                 <motion.a
                   key={link.name}
                   href={link.href}
+                  target={link.name === 'LinkedIn' ? '_blank' : undefined}
+                  rel={link.name === 'LinkedIn' ? 'noopener noreferrer' : undefined}
                   whileHover={{ scale: 1.15, y: -4 }}
                   whileTap={{ scale: 0.9 }}
+                  aria-label={link.name}
                   className="w-10 h-10 rounded-full bg-gradient-to-br from-[rgba(0,153,255,0.15)] to-[rgba(168,85,247,0.1)] border border-[rgba(0,217,255,0.2)] flex items-center justify-center text-[#00d9ff] hover:border-[rgba(0,217,255,0.4)] hover:bg-gradient-to-br hover:from-[rgba(0,153,255,0.25)] hover:to-[rgba(168,85,247,0.15)] transition-all duration-300 font-semibold text-sm"
                   title={link.name}
                   style={{ willChange: 'transform, border-color, background' }}
@@ -137,7 +176,6 @@ const Footer = memo(() => {
           </motion.div>
         </div>
 
-        {/* Divider */}
         <motion.div
           initial={{ scaleX: 0 }}
           whileInView={{ scaleX: 1 }}
@@ -146,23 +184,22 @@ const Footer = memo(() => {
           className="h-px bg-gradient-to-r from-transparent via-[rgba(0,217,255,0.2)] to-transparent mb-8 origin-left"
         />
 
-        {/* Bottom Bar */}
         <motion.div
           variants={containerVariants}
           className="flex flex-col md:flex-row justify-between items-center gap-6"
         >
-          {/* Copyright */}
           <motion.p variants={itemVariants} className="text-gray-500 text-sm font-light">
             © {currentYear} Diksha Chauhan. All rights reserved. | AI Automation Solutions
           </motion.p>
 
-          {/* Scroll to Top Button */}
           <motion.button
             variants={itemVariants}
             onClick={scrollToTop}
             whileHover={{ scale: 1.1, y: -4 }}
             whileTap={{ scale: 0.95 }}
-            className="px-6 py-2.5 rounded-full bg-gradient-to-r from-[#0099ff] to-[#00d9ff] text-white text-sm font-semibold shadow-lg shadow-[#00d9ff]/20 hover:shadow-[#00d9ff]/40 transition-all duration-300"
+            type="button"
+            aria-label="Back to top"
+            className="px-6 py-2.5 rounded-full bg-gradient-to-r from-[#0099ff] to-[#00d9ff] text-white text-sm font-semibold shadow-lg shadow-[#00d9ff]/20 hover:shadow-[#00d9ff]/40 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
             style={{ willChange: 'transform, box-shadow' }}
           >
             ↑ Back to Top

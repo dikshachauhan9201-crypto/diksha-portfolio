@@ -1,6 +1,7 @@
 import { motion } from "framer-motion";
 import { memo } from "react";
 import AnimatedBackground from "../components/AnimatedBackground";
+import { scrollToAndHighlight } from "../utils/scroll";
 
 // ============================================================================
 // ANIMATED NAME COMPONENT
@@ -182,10 +183,11 @@ const Description = memo(() => {
 // ============================================================================
 // BUTTON COMPONENT
 // ============================================================================
-const ButtonLink = memo(({ href, children, variant = "primary" }) => {
+const ButtonLink = memo(({ onClick, children, variant = "primary" }) => {
   return (
-    <motion.a
-      href={href}
+    <motion.button
+      type="button"
+      onClick={onClick}
       className={`relative rounded-full px-8 py-3.5 font-semibold transition-shadow ${
         variant === "primary"
           ? "bg-gradient-to-r from-sky-500 via-blue-500 to-cyan-400 text-white shadow-lg"
@@ -202,7 +204,7 @@ const ButtonLink = memo(({ href, children, variant = "primary" }) => {
       style={{ willChange: "transform, box-shadow" }}
     >
       {children}
-    </motion.a>
+    </motion.button>
   );
 });
 
@@ -247,7 +249,7 @@ const ScrollIndicator = memo(() => {
 // ============================================================================
 const Hero = memo(() => {
   return (
-    <section className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-[#030712] px-6 py-20 text-white sm:px-8 lg:px-12">
+    <section id="home" className="relative isolate flex min-h-screen items-center justify-center overflow-hidden bg-[#030712] px-6 py-20 text-white sm:px-8 lg:px-12">
       <AnimatedBackground />
 
       <motion.div
@@ -277,10 +279,10 @@ const Hero = memo(() => {
           transition={{ delay: 0.6, duration: 0.5 }}
           style={{ willChange: "opacity" }}
         >
-          <ButtonLink href="#projects" variant="primary">
+          <ButtonLink onClick={() => scrollToAndHighlight("projects")} variant="primary">
             View Projects
           </ButtonLink>
-          <ButtonLink href="#contact" variant="secondary">
+          <ButtonLink onClick={() => scrollToAndHighlight("contact")} variant="secondary">
             Let&apos;s Talk
           </ButtonLink>
         </motion.div>
