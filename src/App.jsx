@@ -183,9 +183,7 @@ function App() {
       </Suspense>
 
       <Suspense fallback={<div className="h-[30vh] w-full" aria-hidden="true" />}>
-        <SectionReveal reducedMotion={prefersReducedMotion}>
-          <Projects />
-        </SectionReveal>
+        <Projects />
       </Suspense>
 
       <Suspense fallback={<div className="h-[30vh] w-full" aria-hidden="true" />}>

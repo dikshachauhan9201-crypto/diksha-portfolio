@@ -222,6 +222,30 @@ WorkflowTimeline.displayName = 'WorkflowTimeline';
 
 const Projects = memo(() => {
   const [selectedProject, setSelectedProject] = useState(null);
+  const [isMobile, setIsMobile] = useState(() =>
+    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  );
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return undefined;
+    }
+
+    const mediaQuery = window.matchMedia('(max-width: 767px)');
+    const onViewportChange = (event) => {
+      setIsMobile(event.matches);
+    };
+
+    setIsMobile(mediaQuery.matches);
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', onViewportChange);
+      return () => mediaQuery.removeEventListener('change', onViewportChange);
+    }
+
+    mediaQuery.addListener(onViewportChange);
+    return () => mediaQuery.removeListener(onViewportChange);
+  }, []);
 
   const projects = useMemo(
     () => [
@@ -589,15 +613,16 @@ const Projects = memo(() => {
   return (
     <section
       id="projects"
-      className="relative w-full min-h-screen flex items-center justify-center py-24 px-4 md:px-8 bg-[#030712] overflow-hidden"
+      className="relative w-full min-h-screen flex items-start justify-center py-24 px-4 md:items-center md:px-8 bg-[#030712] overflow-visible md:overflow-hidden"
     >
       <SectionBackground variant="projects" />
 
       <motion.div
         variants={containerVariants}
-        initial="initial"
-        whileInView="animate"
-        viewport={{ once: true, amount: 0.15 }}
+        initial={isMobile ? 'animate' : 'initial'}
+        animate={isMobile ? 'animate' : undefined}
+        whileInView={isMobile ? undefined : 'animate'}
+        viewport={isMobile ? undefined : { once: true, amount: 0.15 }}
         className="max-w-7xl mx-auto w-full relative z-10"
       >
         <motion.div variants={itemVariants} className="text-center mb-20">
@@ -612,23 +637,23 @@ const Projects = memo(() => {
           </p>
         </motion.div>
 
-        <motion.div className="grid md:grid-cols-2 lg:grid-cols-4 gap-7" variants={containerVariants}>
+        <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-7" variants={containerVariants}>
           {projectsWithImages.map((project) => (
             <motion.article
               key={project.id}
-              initial={{ opacity: 0, y: 18, scale: 0.98 }}
-              whileInView={{ opacity: 1, y: 0, scale: 1 }}
-              viewport={{ once: true }}
+              initial={isMobile ? false : { opacity: 0, y: 18, scale: 0.98 }}
+              animate={isMobile ? { opacity: 1, y: 0, scale: 1 } : { y: [0, -4, 0] }}
+              whileInView={isMobile ? undefined : { opacity: 1, y: 0, scale: 1 }}
+              viewport={isMobile ? undefined : { once: true }}
               transition={{ duration: 0.45 }}
-              animate={{ y: [0, -4, 0] }}
-              whileHover={{ y: -12, rotateX: 2.5, rotateY: -2.5 }}
+              whileHover={isMobile ? undefined : { y: -12, rotateX: 2.5, rotateY: -2.5 }}
               className="group relative overflow-hidden rounded-2xl border border-cyan-300/20 bg-gradient-to-br from-white/10 to-white/5 p-5 backdrop-blur-xl shadow-lg shadow-cyan-500/5 hover:shadow-cyan-400/25 hover:border-cyan-300/45 transition-all duration-400"
               style={{ willChange: 'transform, border-color, box-shadow', transformStyle: 'preserve-3d' }}
             >
               <motion.div
                 className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100"
-                animate={{ backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-                transition={{ duration: 5.5, repeat: Infinity, ease: 'linear' }}
+                animate={isMobile ? undefined : { backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
+                transition={isMobile ? undefined : { duration: 5.5, repeat: Infinity, ease: 'linear' }}
                 style={{
                   backgroundImage:
                     'linear-gradient(130deg, transparent 0%, rgba(0,217,255,0.22) 50%, transparent 100%)',
@@ -649,7 +674,7 @@ const Projects = memo(() => {
               <div className="relative z-10 mt-5 space-y-4">
                 <motion.h3
                   className="text-xl font-bold text-white tracking-tight"
-                  whileHover={{ x: 3 }}
+                  whileHover={isMobile ? undefined : { x: 3 }}
                   transition={{ duration: 0.2 }}
                 >
                   {project.title}
@@ -717,7 +742,7 @@ const Projects = memo(() => {
 
                 <motion.p
                   initial={{ opacity: 1, x: 0 }}
-                  whileHover={{ x: 2 }}
+                  whileHover={isMobile ? undefined : { x: 2 }}
                   className="text-sm font-semibold text-cyan-200 opacity-100 transition-all duration-300"
                 >
                   View Project {'->'}
