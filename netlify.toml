@@ -1,0 +1,6 @@
+[build]
+  base = "."
+  # Install dependencies explicitly so the build also works in environments
+  # that do not auto-install them before running the build command.
+  command = "npm install --no-audit --no-fund && npm run build"
+  publish = "dist"
