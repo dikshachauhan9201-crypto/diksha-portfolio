@@ -1,914 +1,428 @@
-import React, { memo, useEffect, useMemo, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { memo, useEffect, useMemo, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import SectionBackground from '../components/SectionBackground';
+import PointerGlow from '../components/PointerGlow';
+import ScrollFan from '../components/ScrollFan';
 
-const createProjectImage = (title, accentA, accentB) => {
-  const svg = `
-    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 700" width="1200" height="700">
-      <defs>
-        <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stop-color="${accentA}" />
-          <stop offset="100%" stop-color="${accentB}" />
-        </linearGradient>
-        <linearGradient id="panel" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stop-color="rgba(255,255,255,0.24)" />
-          <stop offset="100%" stop-color="rgba(255,255,255,0.04)" />
-        </linearGradient>
-      </defs>
-      <rect width="1200" height="700" fill="url(#bg)" />
-      <circle cx="970" cy="140" r="240" fill="rgba(255,255,255,0.12)" />
-      <circle cx="240" cy="640" r="260" fill="rgba(255,255,255,0.1)" />
-      <rect x="95" y="110" rx="24" ry="24" width="1010" height="500" fill="url(#panel)" stroke="rgba(255,255,255,0.3)" />
-      <text x="145" y="240" fill="white" font-size="56" font-weight="700" font-family="Segoe UI, Arial">${title}</text>
-      <text x="145" y="305" fill="rgba(255,255,255,0.88)" font-size="28" font-family="Segoe UI, Arial">Automation Architecture Preview</text>
-      <line x1="145" y1="355" x2="900" y2="355" stroke="rgba(255,255,255,0.45)" stroke-width="3" />
-      <rect x="145" y="390" rx="12" ry="12" width="250" height="70" fill="rgba(255,255,255,0.22)" />
-      <rect x="420" y="390" rx="12" ry="12" width="220" height="70" fill="rgba(255,255,255,0.18)" />
-      <rect x="665" y="390" rx="12" ry="12" width="260" height="70" fill="rgba(255,255,255,0.14)" />
-    </svg>
-  `;
-
-  return `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
-};
-
-const HIGHLIGHT_WORDS = [
-  'automation',
-  'AI',
-  'workflow',
-  'lead',
-  'customer',
-  'response',
-  'integration',
-  'process',
-  'quality',
-  'speed',
-  'scalable',
+const projects = [
+  {
+    id: 'lead-qualification',
+    title: 'AI Lead Qualification System',
+    summary: 'Classifies inbound leads and routes the right follow-up path from one connected workflow.',
+    status: 'Built',
+    category: 'AI + Sales Operations',
+    stack: ['Webhook', 'OpenAI', 'CRM', 'Make.com'],
+    problem: 'Inbound leads need consistent triage before a sales team can decide where to focus.',
+    approach: 'Capture the form payload, validate the available context, apply an AI-assisted classification step, then store and route the result.',
+    nodes: ['Lead form', 'Validate', 'Classify', 'CRM', 'Notify'],
+    features: ['Structured intake', 'Hot / warm / cold classification', 'Conditional routing', 'Sales notification'],
+    accent: 'cyan',
+  },
+  {
+    id: 'whatsapp-chatbot',
+    title: 'AI WhatsApp Chatbot',
+    summary: 'Connects incoming WhatsApp messages to intent processing, context handling, and an automated response path.',
+    status: 'Built',
+    category: 'Conversational Automation',
+    stack: ['WhatsApp', 'Webhook', 'OpenAI', 'CRM', 'Make.com'],
+    problem: 'Repeated messaging requests can create slow and inconsistent first responses.',
+    approach: 'Receive the message through a webhook, interpret intent, use available context, return a response, and preserve the interaction for follow-up.',
+    nodes: ['Message', 'Webhook', 'Intent', 'Context', 'Reply'],
+    features: ['Inbound message capture', 'Intent processing', 'Context-aware response', 'Conversation record'],
+    accent: 'violet',
+  },
+  {
+    id: 'appointment-booking',
+    title: 'Appointment Booking Automation',
+    summary: 'Coordinates intake, calendar availability, confirmations, reminders, and follow-up steps.',
+    status: 'Built',
+    category: 'Operations Workflow',
+    stack: ['Google Calendar', 'Gmail', 'Webhook', 'Make.com'],
+    problem: 'Manual booking creates avoidable back-and-forth and makes confirmations easier to miss.',
+    approach: 'Validate a booking request, create the calendar event, send confirmation, and schedule the reminder and follow-up paths.',
+    nodes: ['Request', 'Validate', 'Calendar', 'Confirm', 'Remind'],
+    features: ['Calendar sync', 'Automatic confirmation', 'Reminder sequence', 'Follow-up path'],
+    accent: 'blue',
+  },
+  {
+    id: 'lead-generation',
+    title: 'AI Lead Generation Automation',
+    summary: 'Captures, enriches, and organizes lead information for a more consistent outreach process.',
+    status: 'Built',
+    category: 'Lead Operations',
+    stack: ['OpenAI', 'Google Sheets', 'Gmail', 'Make.com'],
+    problem: 'Lead details can arrive incomplete or spread across tools, making the next outreach step harder to prepare.',
+    approach: 'Capture the submitted details, enrich or summarize available context, then organize the result for a reviewable outreach step.',
+    nodes: ['Capture', 'Enrich', 'Store', 'Outreach'],
+    features: ['Lead intake', 'Context enrichment', 'Structured record', 'Outreach preparation'],
+  },
+  {
+    id: 'voice-agent',
+    title: 'AI Voice Agent',
+    summary: 'Explores a voice-first intake path with transcription, reasoning, and response synthesis.',
+    status: 'Independent Demo',
+    category: 'Voice AI',
+    stack: ['Voice AI', 'OpenAI', 'API', 'Make.com'],
+    problem: 'Voice-first intake needs a clear way to move from spoken input to a useful, reviewable response.',
+    approach: 'Explore a pipeline that transcribes the call, interprets the request, and prepares a response while treating voice services as experimental components.',
+    nodes: ['Call', 'Transcribe', 'Reason', 'Respond'],
+    features: ['Voice intake concept', 'Transcription step', 'Intent reasoning', 'Response synthesis'],
+  },
+  {
+    id: 'email-personalizer',
+    title: 'AI Email Personalizer',
+    summary: 'Generates draft outreach from lead context and passes it into a reviewable email workflow.',
+    status: 'Built',
+    category: 'Content Workflow',
+    stack: ['OpenAI', 'Gmail', 'JavaScript', 'Make.com'],
+    problem: 'Generic outreach takes time to tailor and can miss relevant details already available about a lead.',
+    approach: 'Combine approved lead context with a drafting step, then keep the result as a draft for a person to review before sending.',
+    nodes: ['Lead data', 'Context', 'Draft', 'Email'],
+    features: ['Context selection', 'Personalized draft', 'Review before sending', 'Email hand-off'],
+  },
+  {
+    id: 'form-submission',
+    title: 'Form Submission Automation',
+    summary: 'Validates form data, records it, and triggers the appropriate notification path.',
+    status: 'Built',
+    category: 'Data Intake',
+    stack: ['Webhook', 'Google Sheets', 'Gmail', 'Make.com'],
+    problem: 'Manual handling of form submissions can leave records incomplete or delay notifications.',
+    approach: 'Validate the submitted fields, record the structured data, and notify the appropriate recipient.',
+    nodes: ['Form', 'Validate', 'Record', 'Notify'],
+    features: ['Form intake', 'Field validation', 'Sheet record', 'Email notification'],
+  },
+  {
+    id: 'lead-follow-up',
+    title: 'Lead Follow-up Automation',
+    summary: 'Keeps lead status and follow-up communication moving through scheduled workflow steps.',
+    status: 'Built',
+    category: 'Sales Operations',
+    stack: ['CRM', 'Gmail', 'Google Sheets', 'Make.com'],
+    problem: 'Follow-up can be missed when lead status, timing, and communication are not kept together.',
+    approach: 'Use a scheduled check against lead status, prepare the next follow-up step, and update the record after the hand-off.',
+    nodes: ['CRM', 'Schedule', 'Follow up', 'Update'],
+    features: ['Status check', 'Scheduled follow-up', 'Communication hand-off', 'Record update'],
+  },
+  {
+    id: 'meeting-intelligence',
+    title: 'Meeting Intelligence Workflow',
+    summary: 'An illustrative pattern for turning a meeting transcript into a reviewable summary and action list.',
+    status: 'Concept · proposed',
+    category: 'Workflow design',
+    stack: ['n8n (proposed)', 'Transcript source (TBD)', 'Human review'],
+    problem: 'Important decisions and action items can be difficult to find again in long meeting notes.',
+    approach: 'Take an available transcript, extract a structured summary and action items, then route the draft for review before sharing or storing it.',
+    nodes: ['Transcript', 'Extract', 'Review', 'Share'],
+    features: ['Transcript intake', 'Decision summary', 'Action-item extraction', 'Human approval before delivery'],
+    proposed: true,
+  },
+  {
+    id: 'client-management-intelligence',
+    title: 'Client Management Intelligence',
+    summary: 'A proposed reporting flow for consolidating project updates into a clear client-ready brief.',
+    status: 'Concept · proposed',
+    category: 'Workflow design',
+    stack: ['n8n (proposed)', 'Update source (TBD)', 'Human review'],
+    problem: 'Project updates may be spread across different records, making progress and open questions harder to summarize.',
+    approach: 'Collect approved project updates, highlight missing information, and prepare a concise brief for a person to check before it is shared.',
+    nodes: ['Project updates', 'Consolidate', 'Flag gaps', 'Review brief'],
+    features: ['Update consolidation', 'Missing-field checks', 'Progress summary', 'Client-ready draft for review'],
+    proposed: true,
+  },
+  {
+    id: 'content-generation-pipeline',
+    title: 'Content Generation Pipeline',
+    summary: 'A proposed, approval-led workflow for turning a content brief into a reviewed draft.',
+    status: 'Concept · proposed',
+    category: 'Workflow design',
+    stack: ['n8n (proposed)', 'AI drafting (optional)', 'Human approval'],
+    problem: 'Content requests can arrive in inconsistent formats and need a clear review point before publication.',
+    approach: 'Structure the brief, prepare a draft with optional AI assistance, run basic completeness checks, and pause for human approval.',
+    nodes: ['Brief', 'Draft', 'Quality check', 'Approval'],
+    features: ['Structured brief', 'Optional AI-assisted draft', 'Completeness check', 'Approval before publishing'],
+    proposed: true,
+  },
 ];
 
-const highlightKeywords = (text) => {
-  const parts = text.split(/(\s+)/);
-  return parts.map((part, index) => {
-    const clean = part.replace(/[^a-zA-Z]/g, '').toLowerCase();
-    if (HIGHLIGHT_WORDS.includes(clean)) {
-      return (
-        <span key={`${part}-${index}`} className="bg-gradient-to-r from-cyan-300 to-blue-300 bg-clip-text text-transparent font-semibold">
-          {part}
-        </span>
-      );
-    }
-    return <span key={`${part}-${index}`}>{part}</span>;
-  });
+const proposedSystems = [
+  {
+    code: 'CONTENT OPS',
+    title: 'AI Content Operations Platform',
+    summary: 'A proposed approval-led system for research, drafting, channel adaptation, scheduling, and performance feedback.',
+    modules: ['Research', 'Human approval', 'Publishing', 'Analytics loop'],
+    details: ['Gather topic context and sources.', 'Review drafts before distribution.', 'Prepare approved content for publishing.', 'Use performance feedback to guide iteration.'],
+  },
+  {
+    code: 'INTELLIGENCE',
+    title: 'Research & Intelligence System',
+    summary: 'A proposed monitoring layer that gathers trusted sources, removes duplication, scores relevance, and delivers concise briefs.',
+    modules: ['Source capture', 'Relevance scoring', 'Synthesis', 'Brief delivery'],
+    details: ['Collect information from agreed sources.', 'Remove duplicates and rank relevance.', 'Summarize related findings into themes.', 'Prepare a concise brief for review.'],
+  },
+  {
+    code: 'DOCUMENT AI',
+    title: 'Intelligent Document Processing',
+    summary: 'A proposed human-in-the-loop pipeline for document intake, extraction, validation, exception routing, and system updates.',
+    modules: ['OCR / extraction', 'Validation', 'Exception queue', 'Data sync'],
+    details: ['Receive documents from an agreed intake.', 'Extract fields into a structured draft.', 'Flag missing or uncertain values.', 'Prepare validated records for hand-off.'],
+  },
+  {
+    code: 'RELIABILITY',
+    title: 'Workflow Monitoring & Recovery',
+    summary: 'A proposed operations layer for health checks, error classification, retry policies, alerts, and recovery reporting.',
+    modules: ['Health events', 'Error triage', 'Safe retry', 'Operations report'],
+    details: ['Observe useful workflow health signals.', 'Classify failures and their likely cause.', 'Retry only when the process allows it.', 'Summarize incidents and recovery status.'],
+  },
+];
+
+const accentClasses = {
+  cyan: 'from-cyan-300/25 via-blue-400/10 to-transparent text-cyan-200 border-cyan-300/20',
+  violet: 'from-violet-300/25 via-fuchsia-400/10 to-transparent text-violet-200 border-violet-300/20',
+  blue: 'from-blue-300/25 via-cyan-400/10 to-transparent text-blue-200 border-blue-300/20',
 };
 
-const FlowNode = memo(({ node, index }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 10, scale: 0.96 }}
-    animate={{ opacity: 1, y: 0, scale: 1 }}
-    transition={{ delay: 0.08 * index, duration: 0.35 }}
-    whileHover={{ y: -4, scale: 1.02 }}
-    className="group relative min-w-[160px] rounded-2xl border border-cyan-300/25 bg-gradient-to-br from-white/12 to-white/5 px-4 py-3 text-center backdrop-blur-xl shadow-lg shadow-cyan-500/10"
-    style={{ willChange: 'transform, box-shadow, border-color' }}
-  >
-    <motion.div
-      className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100"
-      animate={{ backgroundPosition: ['0% 0%', '100% 100%'] }}
-      transition={{ duration: 3.5, repeat: Infinity, ease: 'linear' }}
-      style={{
-        backgroundImage:
-          'linear-gradient(120deg, rgba(0,217,255,0.12), rgba(168,85,247,0.12), rgba(0,153,255,0.12))',
-        backgroundSize: '220% 220%',
-      }}
-    />
+const statusStyles = {
+  Built: 'border-emerald-300/30 bg-emerald-400/10 text-emerald-100',
+  'Independent Demo': 'border-amber-300/30 bg-amber-400/10 text-amber-100',
+  'Concept · proposed': 'border-violet-300/30 bg-violet-400/10 text-violet-100',
+};
 
-    <div className="relative z-10">
-      <motion.div
-        className="mb-2 text-xl"
-        animate={{ y: [0, -2, 0] }}
-        transition={{ duration: 2.4, repeat: Infinity, delay: index * 0.12 }}
-      >
-        {node.icon}
-      </motion.div>
-      <p className="text-sm font-semibold text-slate-100 leading-tight">{node.label}</p>
-    </div>
-  </motion.div>
-));
+const projectTypeMap = {
+  'AI + Sales Operations': 'AI Automation',
+  'Conversational Automation': 'AI Automation',
+  'Operations Workflow': 'Business Automation',
+  'Lead Operations': 'Business Automation',
+  'Data Intake': 'Business Automation',
+  'Sales Operations': 'Business Automation',
+  'Voice AI': 'AI-Powered Solutions',
+  'Content Workflow': 'AI-Powered Solutions',
+  'Workflow design': 'AI-Powered Solutions',
+};
 
-FlowNode.displayName = 'FlowNode';
+const projectFilters = ['All', 'AI Automation', 'Business Automation', 'AI-Powered Solutions'];
 
-const FlowConnector = memo(({ index }) => (
-  <motion.div
-    initial={{ opacity: 0 }}
-    animate={{ opacity: 1 }}
-    transition={{ delay: 0.08 * index + 0.1 }}
-    className="flex items-center justify-center"
-  >
-    <div className="relative h-10 w-10">
-      <motion.div
-        className="absolute left-1/2 top-0 h-full w-[2px] -translate-x-1/2 bg-gradient-to-b from-cyan-300/70 via-blue-400/80 to-purple-400/70"
-        animate={{ opacity: [0.45, 1, 0.45] }}
-        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-      />
-      <motion.div
-        className="absolute left-1/2 top-1/2 h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-cyan-300 shadow-[0_0_14px_rgba(0,217,255,0.7)]"
-        animate={{ y: [-8, 8, -8], opacity: [0.6, 1, 0.6] }}
-        transition={{ duration: 1.8, repeat: Infinity, ease: 'easeInOut' }}
-      />
-    </div>
-  </motion.div>
-));
-
-FlowConnector.displayName = 'FlowConnector';
-
-const WorkflowDiagram = memo(({ steps }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 8 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.1, duration: 0.3 }}
-    className="rounded-2xl border border-cyan-300/20 bg-gradient-to-br from-[rgba(8,18,40,0.75)] to-[rgba(10,24,52,0.55)] p-5 backdrop-blur-xl"
-  >
-    <motion.div
-      className="pointer-events-none mb-4 h-px w-full"
-      animate={{ backgroundPosition: ['0% 0%', '100% 0%', '0% 0%'] }}
-      transition={{ duration: 5, repeat: Infinity, ease: 'linear' }}
-      style={{
-        backgroundImage:
-          'linear-gradient(90deg, rgba(0,217,255,0.2), rgba(168,85,247,0.45), rgba(0,217,255,0.2))',
-        backgroundSize: '220% 100%',
-      }}
-    />
-
-    <div className="grid gap-2">
-      {steps.map((step, index) => (
-        <React.Fragment key={step.label}>
-          <FlowNode node={step} index={index} />
-          {index < steps.length - 1 && <FlowConnector index={index} />}
-        </React.Fragment>
-      ))}
-    </div>
-  </motion.div>
-));
-
-WorkflowDiagram.displayName = 'WorkflowDiagram';
-
-const LiveWorkflowPreview = memo(({ steps }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 6 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.12 }}
-    className="rounded-2xl border border-cyan-300/15 bg-gradient-to-br from-[rgba(4,16,36,0.75)] to-[rgba(4,18,42,0.5)] p-4"
-  >
-    <p className="mb-3 text-sm font-semibold text-cyan-200">Live Workflow Preview</p>
-    <div className="grid gap-2">
-      {steps.map((step, index) => (
-        <React.Fragment key={`live-${step.label}`}>
-          <motion.div
-            className="relative rounded-xl border border-cyan-300/20 bg-white/5 px-3 py-2 text-sm text-slate-200"
-            animate={{ boxShadow: ['0 0 0 rgba(0,217,255,0)', '0 0 16px rgba(0,217,255,0.2)', '0 0 0 rgba(0,217,255,0)'] }}
-            transition={{ duration: 1.8, repeat: Infinity, delay: index * 0.15 }}
-          >
+const Flow = memo(({ nodes, compact = false, reducedMotion = false }) => (
+  <div role="img" className={`flex min-w-max items-center ${compact ? 'gap-1.5' : 'gap-2 sm:gap-3'}`} aria-label={`Illustrative architecture: ${nodes.join(' to ')}`}>
+    {nodes.map((node, index) => (
+      <div key={node} className="contents">
+        <div className={`${compact ? 'px-2.5 py-2 text-[11px]' : 'px-3 py-2.5 text-xs'} rounded-xl border border-white/10 bg-slate-950/70 font-medium text-slate-200 shadow-lg`}>{node}</div>
+        {index < nodes.length - 1 && (
+          <div className="relative h-px w-5 bg-cyan-300/30 sm:w-7" aria-hidden="true">
             <motion.span
-              className="absolute right-2 top-1/2 h-1.5 w-1.5 -translate-y-1/2 rounded-full bg-cyan-300"
-              animate={{ x: [0, 10, 0], opacity: [0.2, 1, 0.2] }}
-              transition={{ duration: 1.4, repeat: Infinity, delay: index * 0.1 }}
+              className="absolute -top-0.5 h-1.5 w-1.5 rounded-full bg-cyan-300 shadow-[0_0_9px_rgba(103,232,249,.8)]"
+              animate={reducedMotion ? undefined : { x: [0, compact ? 14 : 22, 0], opacity: [0.25, 1, 0.25] }}
+              transition={{ duration: 2.4, repeat: Infinity, delay: index * 0.18 }}
             />
-            <span>{step.icon} {step.label}</span>
-          </motion.div>
-          {index < steps.length - 1 && (
-            <motion.div className="mx-auto h-5 w-5 text-cyan-200" animate={{ y: [0, 3, 0], opacity: [0.4, 1, 0.4] }} transition={{ duration: 1.1, repeat: Infinity }}>
-              ↓
-            </motion.div>
-          )}
-        </React.Fragment>
-      ))}
-      <motion.div
-        className="mt-1 rounded-xl border border-emerald-300/35 bg-emerald-500/10 px-3 py-2 text-sm font-semibold text-emerald-200"
-        animate={{ scale: [1, 1.02, 1], boxShadow: ['0 0 0 rgba(16,185,129,0)', '0 0 14px rgba(16,185,129,0.3)', '0 0 0 rgba(16,185,129,0)'] }}
-        transition={{ duration: 1.8, repeat: Infinity }}
-      >
-        ✅ Completed
-      </motion.div>
-    </div>
-  </motion.div>
+          </div>
+        )}
+      </div>
+    ))}
+  </div>
 ));
-
-LiveWorkflowPreview.displayName = 'LiveWorkflowPreview';
-
-const WorkflowTimeline = memo(({ steps }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 6 }}
-    animate={{ opacity: 1, y: 0 }}
-    transition={{ delay: 0.14 }}
-    className="rounded-2xl border border-cyan-300/15 bg-white/[0.03] p-4"
-  >
-    <p className="mb-3 text-sm font-semibold text-cyan-200">Project Timeline</p>
-    <div className="grid gap-2">
-      {steps.map((step, index) => (
-        <motion.div
-          key={`timeline-${step}`}
-          initial={{ opacity: 0.35 }}
-          animate={{ opacity: [0.35, 1, 0.35] }}
-          transition={{ duration: 2.1, repeat: Infinity, delay: index * 0.24 }}
-          className="flex items-center gap-2 text-sm"
-        >
-          <span className="inline-block h-2 w-2 rounded-full bg-cyan-300" />
-          <span className="text-slate-300">{step}</span>
-        </motion.div>
-      ))}
-    </div>
-  </motion.div>
-));
-
-WorkflowTimeline.displayName = 'WorkflowTimeline';
+Flow.displayName = 'Flow';
 
 const Projects = memo(() => {
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [isMobile, setIsMobile] = useState(() =>
-    typeof window !== 'undefined' ? window.innerWidth < 768 : false
+  const [selected, setSelected] = useState(null);
+  const [filter, setFilter] = useState('All');
+  const reduceMotion = useReducedMotion();
+  const featured = projects.slice(0, 3);
+  const categories = projectFilters;
+  const moreProjects = useMemo(
+    () => projects.slice(3).filter((project) => filter === 'All' || projectTypeMap[project.category] === filter),
+    [filter]
   );
 
   useEffect(() => {
-    if (typeof window === 'undefined') {
-      return undefined;
-    }
-
-    const mediaQuery = window.matchMedia('(max-width: 767px)');
-    const onViewportChange = (event) => {
-      setIsMobile(event.matches);
-    };
-
-    setIsMobile(mediaQuery.matches);
-
-    if (typeof mediaQuery.addEventListener === 'function') {
-      mediaQuery.addEventListener('change', onViewportChange);
-      return () => mediaQuery.removeEventListener('change', onViewportChange);
-    }
-
-    mediaQuery.addListener(onViewportChange);
-    return () => mediaQuery.removeListener(onViewportChange);
-  }, []);
-
-  const projects = useMemo(
-    () => [
-      {
-        id: 1,
-        title: 'AI Lead Generation Automation',
-        description: 'Collects, enriches, and qualifies leads automatically for high-conversion outreach.',
-        overview:
-          'Businesses struggle with fragmented lead sources and manual prospecting. This automation pipeline centralizes lead capture, enriches records, and moves qualified contacts into an outreach-ready system with minimal manual effort.',
-        technologies: ['Make.com', 'OpenAI', 'Google Maps', 'Google Sheets', 'Gmail', 'API'],
-        keyFeatures: ['Lead scraping automation', 'Email enrichment', 'Deduplication', 'Outreach ready records'],
-        problem: 'Manual lead sourcing was slow, inconsistent, and hard to scale across campaigns.',
-        solution:
-          'The workflow automates lead discovery, enrichment, and routing so teams can focus on conversions rather than data wrangling.',
-        workflowDiagram: [
-          { label: 'Google Maps', icon: '🗺️' },
-          { label: 'Lead Scraper', icon: '🧲' },
-          { label: 'Email Enrichment', icon: '📬' },
-          { label: 'Make.com', icon: '⚙️' },
-          { label: 'Google Sheets', icon: '📗' },
-          { label: 'Gmail Outreach', icon: '✉️' },
-        ],
-        livePreview: [
-          { label: 'Trigger', icon: '🟢' },
-          { label: 'Make.com', icon: '⚡' },
-          { label: 'OpenAI', icon: '🤖' },
-          { label: 'Google Sheets', icon: '📊' },
-          { label: 'Gmail', icon: '📧' },
-        ],
-        timeline: ['Trigger Received', 'AI Processing', 'Automation Running', 'Data Saved', 'Notification Sent', 'Completed'],
-        businessBenefits: [
-          { icon: '⏱', label: 'Save Manual Time' },
-          { icon: '⚡', label: 'Faster Response' },
-          { icon: '📈', label: 'Better Productivity' },
-          { icon: '🤖', label: 'AI Powered' },
-        ],
-        futureImprovements: ['Coming Soon', 'Analytics Dashboard', 'Advanced Reporting', 'CRM Integration'],
-        github: '',
-        demo: '',
-        accentA: '#0a3f91',
-        accentB: '#00b9ff',
-      },
-      {
-        id: 2,
-        title: 'AI WhatsApp Chatbot',
-        description: 'Automates customer conversations on WhatsApp with fast, context-aware responses.',
-        overview:
-          'Support teams often face high message volume and delayed responses. This chatbot architecture handles repetitive conversations instantly while preserving a human handoff path for complex requests.',
-        technologies: ['WhatsApp', 'Webhook', 'Make.com', 'OpenAI', 'CRM'],
-        keyFeatures: ['Intent detection', 'Auto replies', 'Context memory', 'CRM sync'],
-        problem: 'Customer support response time was inconsistent and dependent on manual availability.',
-        solution:
-          'The flow captures incoming messages, processes intent with AI, and responds automatically while syncing context to CRM.',
-        workflowDiagram: [
-          { label: 'Customer', icon: '👤' },
-          { label: 'WhatsApp', icon: '💬' },
-          { label: 'Webhook', icon: '🔗' },
-          { label: 'Make.com', icon: '⚙️' },
-          { label: 'OpenAI', icon: '🧠' },
-          { label: 'CRM', icon: '🗂️' },
-          { label: 'Auto Reply', icon: '✅' },
-        ],
-        livePreview: [
-          { label: 'Trigger', icon: '🟢' },
-          { label: 'Make.com', icon: '⚡' },
-          { label: 'OpenAI', icon: '🤖' },
-          { label: 'CRM', icon: '📊' },
-          { label: 'Auto Reply', icon: '📧' },
-        ],
-        timeline: ['Trigger Received', 'AI Processing', 'Automation Running', 'Data Saved', 'Notification Sent', 'Completed'],
-        businessBenefits: [
-          { icon: '⏱', label: 'Save Manual Time' },
-          { icon: '⚡', label: 'Faster Response' },
-          { icon: '📈', label: 'Better Productivity' },
-          { icon: '🤖', label: 'AI Powered' },
-        ],
-        futureImprovements: ['Coming Soon', 'Voice AI Upgrade', 'CRM Integration', 'Advanced Reporting'],
-        github: '',
-        demo: '',
-        accentA: '#0c4ea7',
-        accentB: '#8753ff',
-      },
-      {
-        id: 3,
-        title: 'AI Voice Agent',
-        description: 'Handles voice conversations with AI for inbound customer calls and first-line support.',
-        overview:
-          'Phone support is difficult to scale during peak hours. This voice automation stack handles inbound calls with natural AI responses, applies business logic, and delivers high-quality customer interactions.',
-        technologies: ['Voice AI', 'OpenAI', 'API', 'Make.com'],
-        keyFeatures: ['Speech-to-text', 'Intent reasoning', 'Response synthesis', 'Smart routing'],
-        problem: 'Teams were missing calls and spending too much time on repetitive support queries.',
-        solution:
-          'The voice agent converts speech to text, applies AI reasoning and business rules, then returns real-time voice responses.',
-        workflowDiagram: [
-          { label: 'Incoming Call', icon: '📞' },
-          { label: 'Voice AI', icon: '🎙️' },
-          { label: 'Speech to Text', icon: '📝' },
-          { label: 'OpenAI', icon: '🧠' },
-          { label: 'Business Logic', icon: '🧩' },
-          { label: 'Text to Speech', icon: '🔊' },
-          { label: 'Customer Response', icon: '✅' },
-        ],
-        livePreview: [
-          { label: 'Trigger', icon: '🟢' },
-          { label: 'Make.com', icon: '⚡' },
-          { label: 'OpenAI', icon: '🤖' },
-          { label: 'Google Sheets', icon: '📊' },
-          { label: 'Gmail', icon: '📧' },
-        ],
-        timeline: ['Trigger Received', 'AI Processing', 'Automation Running', 'Data Saved', 'Notification Sent', 'Completed'],
-        businessBenefits: [
-          { icon: '⏱', label: 'Save Manual Time' },
-          { icon: '⚡', label: 'Faster Response' },
-          { icon: '📈', label: 'Better Productivity' },
-          { icon: '🤖', label: 'AI Powered' },
-        ],
-        futureImprovements: ['Coming Soon', 'Voice AI Upgrade', 'Analytics Dashboard', 'Advanced Reporting'],
-        github: '',
-        demo: '',
-        accentA: '#083e84',
-        accentB: '#00d9ff',
-      },
-      {
-        id: 4,
-        title: 'AI Email Personalizer',
-        description: 'Generates personalized outreach emails based on lead data and business intent.',
-        overview:
-          'Generic outreach reduces response rates and wastes campaign budget. This system analyzes context and generates personalized email copy that feels relevant and aligned to each lead profile.',
-        technologies: ['OpenAI', 'Gmail', 'Make.com', 'JavaScript'],
-        keyFeatures: ['Website context extraction', 'Personalized content blocks', 'Follow-up sequences', 'Batch automation'],
-        problem: 'Cold email campaigns lacked personalization and had low engagement quality.',
-        solution:
-          'The pipeline composes context-aware outreach and follow-ups automatically, improving quality and speed simultaneously.',
-        workflowDiagram: [
-          { label: 'Lead Database', icon: '🗃️' },
-          { label: 'Website Analysis', icon: '🌐' },
-          { label: 'OpenAI', icon: '🧠' },
-          { label: 'Personalized Email', icon: '✍️' },
-          { label: 'Gmail', icon: '📨' },
-          { label: 'Follow-up', icon: '🔁' },
-        ],
-        livePreview: [
-          { label: 'Trigger', icon: '🟢' },
-          { label: 'Make.com', icon: '⚡' },
-          { label: 'OpenAI', icon: '🤖' },
-          { label: 'Google Sheets', icon: '📊' },
-          { label: 'Gmail', icon: '📧' },
-        ],
-        timeline: ['Trigger Received', 'AI Processing', 'Automation Running', 'Data Saved', 'Notification Sent', 'Completed'],
-        businessBenefits: [
-          { icon: '⏱', label: 'Save Manual Time' },
-          { icon: '⚡', label: 'Faster Response' },
-          { icon: '📈', label: 'Better Productivity' },
-          { icon: '🤖', label: 'AI Powered' },
-        ],
-        futureImprovements: ['Coming Soon', 'Advanced Reporting', 'Analytics Dashboard', 'CRM Integration'],
-        github: '',
-        demo: '',
-        accentA: '#0d3f8f',
-        accentB: '#7a4dff',
-      },
-      {
-        id: 5,
-        title: 'AI Lead Qualification System',
-        description: 'Automatically scores and classifies inbound leads for faster sales prioritization.',
-        overview:
-          'Sales teams lose time when every lead is treated equally. This qualification engine scores lead quality with AI, segments intent levels, and alerts teams only when high-value opportunities appear.',
-        technologies: ['OpenAI', 'CRM', 'Webhook', 'Make.com'],
-        keyFeatures: ['AI scoring', 'Hot/Warm/Cold tagging', 'Sales notifications', 'Real-time routing'],
-        problem: 'Sales teams spent too much time manually filtering low-intent leads.',
-        solution:
-          'The automation applies AI-based scoring and routes only actionable leads to sales, reducing friction in qualification.',
-        workflowDiagram: [
-          { label: 'Lead Form', icon: '📄' },
-          { label: 'OpenAI Analysis', icon: '🧠' },
-          { label: 'Score Lead', icon: '📊' },
-          { label: 'Hot / Warm / Cold', icon: '🔥' },
-          { label: 'CRM', icon: '🗂️' },
-          { label: 'Sales Notification', icon: '🔔' },
-        ],
-        livePreview: [
-          { label: 'Trigger', icon: '🟢' },
-          { label: 'Make.com', icon: '⚡' },
-          { label: 'OpenAI', icon: '🤖' },
-          { label: 'Google Sheets', icon: '📊' },
-          { label: 'Gmail', icon: '📧' },
-        ],
-        timeline: ['Trigger Received', 'AI Processing', 'Automation Running', 'Data Saved', 'Notification Sent', 'Completed'],
-        businessBenefits: [
-          { icon: '⏱', label: 'Save Manual Time' },
-          { icon: '⚡', label: 'Faster Response' },
-          { icon: '📈', label: 'Better Productivity' },
-          { icon: '🤖', label: 'AI Powered' },
-        ],
-        futureImprovements: ['Coming Soon', 'CRM Integration', 'Analytics Dashboard', 'Advanced Reporting'],
-        github: '',
-        demo: '',
-        accentA: '#0a4f9f',
-        accentB: '#00c6f8',
-      },
-      {
-        id: 6,
-        title: 'Appointment Booking Automation',
-        description: 'Automates booking, reminders, confirmations, and follow-up workflows end-to-end.',
-        overview:
-          'Manual scheduling causes delays, missed slots, and poor customer experience. This booking flow synchronizes form intake, calendar operations, and communication to deliver a seamless appointment journey.',
-        technologies: ['Google Calendar', 'Gmail', 'Make.com', 'Webhook'],
-        keyFeatures: ['Calendar sync', 'Auto confirmations', 'Reminder automation', 'Follow-up triggers'],
-        problem: 'Booking operations were manual, causing delays and missed appointments.',
-        solution:
-          'Automation handles request capture, scheduling logic, confirmations, and reminders without operational overhead.',
-        workflowDiagram: [
-          { label: 'Website', icon: '🌍' },
-          { label: 'Booking Form', icon: '🗓️' },
-          { label: 'Google Calendar', icon: '📅' },
-          { label: 'Confirmation Email', icon: '📨' },
-          { label: 'Reminder', icon: '⏰' },
-        ],
-        livePreview: [
-          { label: 'Trigger', icon: '🟢' },
-          { label: 'Make.com', icon: '⚡' },
-          { label: 'OpenAI', icon: '🤖' },
-          { label: 'Google Sheets', icon: '📊' },
-          { label: 'Gmail', icon: '📧' },
-        ],
-        timeline: ['Trigger Received', 'AI Processing', 'Automation Running', 'Data Saved', 'Notification Sent', 'Completed'],
-        businessBenefits: [
-          { icon: '⏱', label: 'Save Manual Time' },
-          { icon: '⚡', label: 'Faster Response' },
-          { icon: '📈', label: 'Better Productivity' },
-          { icon: '🤖', label: 'AI Powered' },
-        ],
-        futureImprovements: ['Coming Soon', 'Analytics Dashboard', 'CRM Integration', 'Advanced Reporting'],
-        github: '',
-        demo: '',
-        accentA: '#0e4e89',
-        accentB: '#9b58f6',
-      },
-      {
-        id: 7,
-        title: 'Form Submission Automation',
-        description: 'Processes incoming forms, validates data, and triggers smart downstream actions.',
-        overview:
-          'Form data often sits idle before action, causing slow response cycles. This architecture validates submissions instantly, syncs records, and notifies relevant channels for immediate follow-up.',
-        technologies: ['Webhook', 'Make.com', 'Google Sheets', 'CRM', 'Gmail'],
-        keyFeatures: ['Validation pipeline', 'Data sync', 'CRM update', 'Slack/Email notifications'],
-        problem: 'Form responses were manually reviewed and often delayed critical follow-up.',
-        solution:
-          'The flow standardizes data, updates systems in real time, and alerts teams without manual checks.',
-        workflowDiagram: [
-          { label: 'Website Form', icon: '🧾' },
-          { label: 'Webhook', icon: '🔗' },
-          { label: 'Make.com', icon: '⚙️' },
-          { label: 'Google Sheets', icon: '📗' },
-          { label: 'CRM', icon: '🗂️' },
-          { label: 'Slack / Email Notification', icon: '📣' },
-        ],
-        livePreview: [
-          { label: 'Trigger', icon: '🟢' },
-          { label: 'Make.com', icon: '⚡' },
-          { label: 'OpenAI', icon: '🤖' },
-          { label: 'Google Sheets', icon: '📊' },
-          { label: 'Gmail', icon: '📧' },
-        ],
-        timeline: ['Trigger Received', 'AI Processing', 'Automation Running', 'Data Saved', 'Notification Sent', 'Completed'],
-        businessBenefits: [
-          { icon: '⏱', label: 'Save Manual Time' },
-          { icon: '⚡', label: 'Faster Response' },
-          { icon: '📈', label: 'Better Productivity' },
-          { icon: '🤖', label: 'AI Powered' },
-        ],
-        futureImprovements: ['Coming Soon', 'Advanced Reporting', 'Analytics Dashboard', 'CRM Integration'],
-        github: '',
-        demo: '',
-        accentA: '#0b4a93',
-        accentB: '#00d1ff',
-      },
-      {
-        id: 8,
-        title: 'Lead Follow-up Automation',
-        description: 'Runs multi-step follow-ups across email and WhatsApp based on lead behavior.',
-        overview:
-          'Lead momentum drops when follow-ups are inconsistent. This automation executes personalized multi-channel follow-up sequences and updates status in real time based on engagement signals.',
-        technologies: ['CRM', 'OpenAI', 'Email', 'WhatsApp', 'Make.com'],
-        keyFeatures: ['Scheduled triggers', 'Personalized messages', 'Multi-channel delivery', 'Status sync'],
-        problem: 'Leads dropped off due to inconsistent and delayed manual follow-up.',
-        solution:
-          'The workflow orchestrates timing, personalization, and channel routing so every lead gets a timely next step.',
-        workflowDiagram: [
-          { label: 'CRM', icon: '🗂️' },
-          { label: 'Scheduled Trigger', icon: '⏱️' },
-          { label: 'OpenAI', icon: '🧠' },
-          { label: 'Personalized Follow-up', icon: '✍️' },
-          { label: 'Email', icon: '📨' },
-          { label: 'WhatsApp', icon: '💬' },
-          { label: 'Status Updated', icon: '✅' },
-        ],
-        livePreview: [
-          { label: 'Trigger', icon: '🟢' },
-          { label: 'Make.com', icon: '⚡' },
-          { label: 'OpenAI', icon: '🤖' },
-          { label: 'Google Sheets', icon: '📊' },
-          { label: 'Gmail', icon: '📧' },
-        ],
-        timeline: ['Trigger Received', 'AI Processing', 'Automation Running', 'Data Saved', 'Notification Sent', 'Completed'],
-        businessBenefits: [
-          { icon: '⏱', label: 'Save Manual Time' },
-          { icon: '⚡', label: 'Faster Response' },
-          { icon: '📈', label: 'Better Productivity' },
-          { icon: '🤖', label: 'AI Powered' },
-        ],
-        futureImprovements: ['Coming Soon', 'Voice AI Upgrade', 'CRM Integration', 'Analytics Dashboard'],
-        github: '',
-        demo: '',
-        accentA: '#11417b',
-        accentB: '#8b54ff',
-      },
-    ],
-    []
-  );
-
-  const projectsWithImages = useMemo(
-    () =>
-      projects.map((project) => ({
-        ...project,
-        image: createProjectImage(project.title, project.accentA, project.accentB),
-      })),
-    [projects]
-  );
-
-  useEffect(() => {
-    if (!selectedProject) {
-      return undefined;
-    }
-
-    const originalOverflow = document.body.style.overflow;
-    const onEsc = (event) => {
-      if (event.key === 'Escape') {
-        setSelectedProject(null);
-      }
-    };
-
+    if (!selected) return undefined;
+    const previousOverflow = document.body.style.overflow;
+    const closeOnEscape = (event) => event.key === 'Escape' && setSelected(null);
     document.body.style.overflow = 'hidden';
-    document.addEventListener('keydown', onEsc);
-
+    window.addEventListener('keydown', closeOnEscape);
     return () => {
-      document.body.style.overflow = originalOverflow;
-      document.removeEventListener('keydown', onEsc);
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', closeOnEscape);
     };
-  }, [selectedProject]);
-
-  const containerVariants = {
-    initial: { opacity: 0 },
-    animate: {
-      opacity: 1,
-      transition: { staggerChildren: 0.08, delayChildren: 0.08 },
-    },
-  };
-
-  const itemVariants = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0, transition: { duration: 0.55, ease: 'easeOut' } },
-  };
+  }, [selected]);
 
   return (
-    <section
-      id="projects"
-      className="relative w-full min-h-screen flex items-start justify-center py-24 px-4 md:items-center md:px-8 bg-[#030712] overflow-visible md:overflow-hidden"
-    >
+    <section id="projects" className="relative overflow-hidden border-y border-white/[0.06] bg-[#030712] px-4 py-24 sm:px-6 lg:px-8 lg:py-32">
       <SectionBackground variant="projects" />
+      <div className="relative z-10 mx-auto max-w-7xl">
+        <motion.header
+          initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          className="grid gap-8 border-b border-white/10 pb-14 lg:grid-cols-[0.75fr_1.25fr] lg:items-end"
+        >
+          <div>
+            <p className="section-kicker">Projects &amp; workflow designs</p>
+            <h2 className="section-title mt-4">Automation systems and workflow builds.</h2>
+          </div>
+          <div className="max-w-2xl">
+            <p className="text-base leading-8 text-slate-300 sm:text-lg">n8n is central to my automation practice. Explore workflow case studies alongside clearly labeled proposed designs—each focused on the logic, tools, and operational problem.</p>
+            <p className="mt-3 text-sm text-slate-500">Diagrams are designed architecture representations, not application screenshots. Proposed designs are illustrative and are not presented as deployed builds.</p>
+          </div>
+        </motion.header>
 
-      <motion.div
-        variants={containerVariants}
-        initial={isMobile ? 'animate' : 'initial'}
-        animate={isMobile ? 'animate' : undefined}
-        whileInView={isMobile ? undefined : 'animate'}
-        viewport={isMobile ? undefined : { once: true, amount: 0.15 }}
-        className="max-w-7xl mx-auto w-full relative z-10"
-      >
-        <motion.div variants={itemVariants} className="text-center mb-20">
-          <motion.h2 className="text-5xl md:text-6xl font-bold mb-6 tracking-tight leading-tight">
-            <span className="bg-gradient-to-r from-[#0099ff] via-[#00d9ff] to-[#a855f7] bg-clip-text text-transparent">
-              Featured Projects
-            </span>
-          </motion.h2>
-          <motion.div className="h-1.5 w-24 bg-gradient-to-r from-[#0099ff] to-[#00d9ff] mx-auto rounded-full mb-6" />
-          <p className="text-gray-300 text-lg max-w-2xl mx-auto leading-relaxed font-light">
-            Real AI automation systems designed for measurable efficiency, reliability, and growth.
-          </p>
-        </motion.div>
-
-        <motion.div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-7" variants={containerVariants}>
-          {projectsWithImages.map((project) => (
-            <motion.article
-              key={project.id}
-              initial={isMobile ? false : { opacity: 0, y: 18, scale: 0.98 }}
-              animate={isMobile ? { opacity: 1, y: 0, scale: 1 } : { y: [0, -4, 0] }}
-              whileInView={isMobile ? undefined : { opacity: 1, y: 0, scale: 1 }}
-              viewport={isMobile ? undefined : { once: true }}
-              transition={{ duration: 0.45 }}
-              whileHover={isMobile ? undefined : { y: -12, rotateX: 2.5, rotateY: -2.5 }}
-              className="group relative overflow-hidden rounded-2xl border border-cyan-300/20 bg-gradient-to-br from-white/10 to-white/5 p-5 backdrop-blur-xl shadow-lg shadow-cyan-500/5 hover:shadow-cyan-400/25 hover:border-cyan-300/45 transition-all duration-400"
-              style={{ willChange: 'transform, border-color, box-shadow', transformStyle: 'preserve-3d' }}
+        <div className="space-y-8 py-14">
+          {featured.map((project, index) => (
+            <PointerGlow key={project.id} tilt className="rounded-[1.75rem]">
+              <motion.article
+              initial={reduceMotion ? false : { opacity: 0, y: 26 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              whileHover={reduceMotion ? undefined : { y: -5, scale: 1.005 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ duration: 0.45, ease: 'easeOut', delay: reduceMotion ? 0 : index * 0.06 }}
+              style={{ transformStyle: 'preserve-3d' }}
+              className={`portfolio-hover-card group grid overflow-hidden rounded-[1.75rem] border bg-gradient-to-br ${accentClasses[project.accent]} bg-[#090817]/90 shadow-[0_24px_70px_rgba(0,0,0,.22)] lg:grid-cols-[1.05fr_0.95fr] ${index % 2 ? 'lg:[&>div:first-child]:order-2' : ''}`}
             >
-              <motion.div
-                className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100"
-                animate={isMobile ? undefined : { backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'] }}
-                transition={isMobile ? undefined : { duration: 5.5, repeat: Infinity, ease: 'linear' }}
-                style={{
-                  backgroundImage:
-                    'linear-gradient(130deg, transparent 0%, rgba(0,217,255,0.22) 50%, transparent 100%)',
-                  backgroundSize: '200% 200%',
-                }}
-              />
-
-              <div className="overflow-hidden rounded-xl border border-white/25 bg-black/20">
-                <motion.img
-                  src={project.image}
-                  alt={`${project.title} preview`}
-                  className="h-44 w-full object-cover"
-                  whileHover={{ scale: 1.08 }}
-                  transition={{ duration: 0.5, ease: 'easeOut' }}
-                />
-              </div>
-
-              <div className="relative z-10 mt-5 space-y-4">
-                <motion.h3
-                  className="text-xl font-bold text-white tracking-tight"
-                  whileHover={isMobile ? undefined : { x: 3 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {project.title}
-                </motion.h3>
-                <p className="text-sm leading-relaxed text-slate-300">{project.description}</p>
-
+              <div className="flex min-h-[330px] flex-col justify-between p-7 sm:p-9 lg:p-11">
                 <div>
-                  <p className="mb-2 text-xs uppercase tracking-[0.18em] text-cyan-200/85">Technologies Used</p>
-                  <div className="flex flex-wrap gap-2">
-                    {project.technologies.slice(0, 4).map((tech) => (
-                      <span
-                        key={tech}
-                        className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1 text-xs font-medium text-cyan-100"
-                      >
-                        {tech}
-                      </span>
-                    ))}
+                  <div className="flex flex-wrap items-center gap-3 text-xs">
+                    <span className={`rounded-full border px-3 py-1 font-semibold ${statusStyles[project.status] || 'border-white/10 bg-white/5 text-slate-200'}`}>
+                      {project.status}
+                    </span>
+                    <span className="text-slate-400">{projectTypeMap[project.category] || project.category}</span>
                   </div>
+                  <h3 className="mt-6 max-w-xl text-2xl font-semibold tracking-tight text-white sm:text-3xl">{project.title}</h3>
+                  <p className="mt-4 max-w-xl text-sm leading-7 text-slate-300 sm:text-base">{project.summary}</p>
+                  {project.problem && (
+                    <dl className="mt-6 grid gap-4 border-t border-white/[0.08] pt-5 sm:grid-cols-2">
+                      <div>
+                        <dt className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Problem</dt>
+                        <dd className="mt-2 text-xs leading-5 text-slate-400">{project.problem}</dd>
+                      </div>
+                      <div>
+                        <dt className="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500">Approach</dt>
+                        <dd className="mt-2 text-xs leading-5 text-slate-400">{project.approach}</dd>
+                      </div>
+                    </dl>
+                  )}
                 </div>
-
-                <div>
-                  <p className="mb-2 text-xs uppercase tracking-[0.18em] text-cyan-200/85">Problem Solved</p>
-                  <p className="text-sm leading-relaxed text-slate-300 line-clamp-3">{project.problem}</p>
+                <div className="mt-8">
+                  <div className="flex flex-wrap gap-2">
+                    {project.stack.map((tool) => <span key={tool} className="rounded-full border border-white/10 bg-white/[0.045] px-3 py-1 text-xs text-slate-300">{tool}</span>)}
+                  </div>
+                  <button type="button" onClick={() => setSelected(project)} className="focus-ring mt-7 inline-flex min-h-11 items-center rounded-full bg-white px-5 text-sm font-semibold text-slate-950 transition hover:bg-cyan-100">Explore case study <span className="ml-2" aria-hidden="true">↗</span></button>
                 </div>
-
-                <div>
-                  <p className="mb-2 text-xs uppercase tracking-[0.18em] text-cyan-200/85">Key Features</p>
-                  <ul className="space-y-1.5">
-                    {project.keyFeatures.slice(0, 3).map((feature) => (
-                      <li key={feature} className="text-sm text-slate-300 flex items-start gap-2">
-                        <span className="text-cyan-300">•</span>
-                        <span>{feature}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-
-                <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 pt-2">
-                  <motion.button
-                    type="button"
-                    onClick={() => setSelectedProject(project)}
-                    whileHover={{ y: -1 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="rounded-lg border border-cyan-300/40 bg-gradient-to-r from-cyan-500/30 to-blue-500/30 px-3 py-2 text-sm font-semibold text-white"
-                  >
-                    View Project
-                  </motion.button>
-
-                  <button
-                    type="button"
-                    disabled
-                    className="rounded-lg border border-slate-500/40 bg-slate-500/15 px-3 py-2 text-sm font-semibold text-slate-400 cursor-not-allowed"
-                  >
-                    Github (Coming Soon)
-                  </button>
-
-                  <button
-                    type="button"
-                    disabled
-                    className="rounded-lg border border-slate-500/40 bg-slate-500/15 px-3 py-2 text-sm font-semibold text-slate-400 cursor-not-allowed"
-                  >
-                    Live Demo (Coming Soon)
-                  </button>
-                </div>
-
-                <motion.p
-                  initial={{ opacity: 1, x: 0 }}
-                  whileHover={isMobile ? undefined : { x: 2 }}
-                  className="text-sm font-semibold text-cyan-200 opacity-100 transition-all duration-300"
-                >
-                  View Project {'->'}
-                </motion.p>
               </div>
-
-              <div className="pointer-events-none absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 blur-2xl transition-opacity duration-500 bg-[radial-gradient(circle_at_30%_25%,rgba(0,217,255,0.22),transparent_65%)]" />
-            </motion.article>
+              <div className="relative flex min-h-[300px] items-center overflow-hidden border-t border-white/10 bg-slate-950/55 p-6 lg:border-l lg:border-t-0 sm:p-8">
+                <div className="relative w-full overflow-x-auto pb-3">
+                  <p className="mb-6 font-mono text-[10px] uppercase tracking-[0.22em] text-slate-500">Designed workflow architecture</p>
+                  <ScrollFan
+                    label={`${project.title} illustrative stages`}
+                    items={project.nodes.map((node, nodeIndex) => ({
+                      title: node,
+                      description: project.features[nodeIndex] || project.summary,
+                    }))}
+                  />
+                </div>
+              </div>
+              </motion.article>
+            </PointerGlow>
           ))}
-        </motion.div>
-      </motion.div>
+        </div>
+
+        <div className="border-t border-white/10 pt-14">
+          <div className="flex flex-col justify-between gap-6 md:flex-row md:items-end">
+            <div>
+              <p className="section-kicker">More automations</p>
+              <h3 className="mt-3 text-3xl font-semibold tracking-tight text-white">Supporting workflow builds</h3>
+            </div>
+            <div className="flex max-w-full gap-2 overflow-x-auto pb-2" aria-label="Filter projects">
+              {categories.map((category) => (
+                <button key={category} type="button" onClick={() => setFilter(category)} aria-pressed={filter === category} className={`focus-ring whitespace-nowrap rounded-full border px-4 py-2 text-xs font-medium transition ${filter === category ? 'border-cyan-300/40 bg-cyan-300/10 text-cyan-100' : 'border-white/10 text-slate-400 hover:border-white/25 hover:text-white'}`}>{category}</button>
+              ))}
+            </div>
+          </div>
+          <div className="mt-8 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+            <AnimatePresence mode="popLayout">
+              {moreProjects.map((project) => (
+                <PointerGlow key={project.id} tilt className="rounded-2xl">
+                <motion.article layout initial={reduceMotion ? false : { opacity: 0, scale: 0.97 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.97 }} whileHover={reduceMotion ? undefined : { y: -4, scale: 1.005 }} transition={{ duration: 0.35, ease: 'easeOut' }} style={{ transformStyle: 'preserve-3d' }} className="portfolio-hover-card flex h-full flex-col rounded-2xl border border-white/[0.08] bg-[#08101f]/90 p-5">
+                  <div className="flex items-center justify-between gap-3"><span className="text-[11px] uppercase tracking-wider text-cyan-200">{projectTypeMap[project.category] || project.category}</span><span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${statusStyles[project.status] || 'border-white/10 bg-white/5 text-slate-300'}`}>{project.status}</span></div>
+                  <h4 className="mt-4 text-lg font-semibold text-white">{project.title}</h4>
+                  <p className="mt-3 text-sm leading-6 text-slate-400">{project.summary}</p>
+                  <div className="mt-5 overflow-x-auto pb-2"><Flow nodes={project.nodes} compact reducedMotion={reduceMotion} /></div>
+                  <div className="mt-auto flex flex-wrap gap-2 pt-3">{project.stack.slice(0, 3).map((tool) => <span key={tool} className="rounded-full border border-white/[0.08] px-2.5 py-1 text-[10px] text-slate-500">{tool}</span>)}</div>
+                  <button type="button" onClick={() => setSelected(project)} className="focus-ring mt-5 inline-flex min-h-10 w-fit items-center rounded-full border border-white/10 px-4 text-xs font-medium text-slate-200 transition hover:border-cyan-200/30 hover:text-cyan-100">Explore case study <span className="ml-2" aria-hidden="true">↗</span></button>
+                </motion.article>
+                </PointerGlow>
+              ))}
+            </AnimatePresence>
+          </div>
+        </div>
+
+        <section className="relative mt-20 overflow-hidden border-t border-white/10 pt-16" aria-labelledby="concepts-title">
+          <SectionBackground variant="concepts" />
+          <div className="relative z-10 grid gap-8 lg:grid-cols-[.8fr_1.2fr] lg:items-end">
+            <div>
+              <p className="section-kicker text-violet-200/80">Concepts &amp; solutions I can build</p>
+              <h3 id="concepts-title" className="mt-4 text-4xl font-semibold tracking-tight text-white">Advanced systems, proposed with clear boundaries.</h3>
+            </div>
+            <p className="max-w-2xl text-base leading-8 text-slate-400">These are solution directions—not completed deployments. Each would be scoped around source quality, approvals, failure paths, observability, security, and the business process it supports.</p>
+          </div>
+          <div className="mt-10 grid gap-4 md:grid-cols-2">
+            {proposedSystems.map((system, index) => (
+              <PointerGlow key={system.title} tilt className="rounded-[1.5rem]">
+                <motion.article
+                  initial={reduceMotion ? false : { opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  whileHover={reduceMotion ? undefined : { y: -4 }}
+                  viewport={{ once: true, amount: 0.2 }}
+                  transition={{ delay: reduceMotion ? 0 : index * 0.06 }}
+                  className="portfolio-hover-card relative overflow-hidden rounded-[1.5rem] border border-violet-300/10 bg-[radial-gradient(circle_at_top_left,rgba(167,139,250,0.12),transparent_26%),linear-gradient(180deg,rgba(15,23,42,0.8),rgba(15,23,42,0.6))] p-6 shadow-[0_18px_45px_rgba(15,23,42,0.2)] sm:p-7"
+                >
+                <div className="flex items-center justify-between gap-4">
+                  <span className="font-mono text-[10px] tracking-[0.18em] text-violet-200/75">{system.code}</span>
+                  <span className="rounded-full border border-violet-200/15 bg-violet-300/[0.07] px-3 py-1 text-[10px] uppercase tracking-wider text-violet-100/80">Concept · proposed build</span>
+                </div>
+                <h4 className="mt-7 text-2xl font-semibold tracking-tight text-white">{system.title}</h4>
+                <p className="mt-3 text-sm leading-7 text-slate-400">{system.summary}</p>
+                <ScrollFan
+                  label={`${system.title} proposed stages`}
+                  items={system.modules.map((module, index) => ({ title: module, description: system.details[index] }))}
+                />
+                </motion.article>
+              </PointerGlow>
+            ))}
+          </div>
+        </section>
+      </div>
 
       <AnimatePresence>
-        {selectedProject && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.25 }}
-              onClick={() => setSelectedProject(null)}
-              className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
-            />
-
-            <motion.div className="fixed inset-0 z-50 flex items-center justify-center p-0 sm:p-4">
-              <motion.div
-                initial={{ opacity: 0, y: 24, scale: 0.98 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 14, scale: 0.99 }}
-                transition={{ duration: 0.28, ease: 'easeOut' }}
-                onClick={(event) => event.stopPropagation()}
-                role="dialog"
-                aria-modal="true"
-                aria-label={`${selectedProject.title} details`}
-                className="h-screen w-screen overflow-hidden rounded-none border-0 bg-gradient-to-br from-[rgba(5,14,34,0.95)] to-[rgba(3,8,23,0.98)] backdrop-blur-2xl sm:h-[94vh] sm:w-[94vw] sm:rounded-3xl sm:border sm:border-cyan-300/20 sm:shadow-[0_30px_90px_rgba(0,153,255,0.22)]"
-              >
-                <div className="flex h-full flex-col">
-                  <div className="flex items-center justify-between border-b border-cyan-300/15 px-5 py-4 sm:px-8 sm:py-6">
-                    <h2 className="pr-4 text-2xl sm:text-3xl font-bold text-white tracking-tight">{selectedProject.title}</h2>
-                    <motion.button
-                      type="button"
-                      onClick={() => setSelectedProject(null)}
-                      whileHover={{ scale: 1.04 }}
-                      whileTap={{ scale: 0.96 }}
-                      className="rounded-lg border border-white/25 bg-white/10 px-3 py-1.5 text-sm font-semibold text-white hover:bg-white/20"
-                    >
-                      Close
-                    </motion.button>
-                  </div>
-
-                  <div className="flex-1 overflow-y-auto px-5 py-6 sm:px-8 sm:py-8">
-                    <div className="grid gap-7 lg:grid-cols-2">
-                      <section className="space-y-3 rounded-2xl border border-cyan-300/15 bg-white/5 p-5">
-                        <h3 className="text-lg font-bold text-white">Overview</h3>
-                        <p className="text-slate-300 leading-relaxed">{highlightKeywords(selectedProject.overview)}</p>
-
-                        <p className="text-base font-semibold text-white">Business Problem</p>
-                        <p className="text-sm leading-relaxed text-slate-300">{highlightKeywords(selectedProject.problem)}</p>
-                        <p className="text-xs text-slate-400">The issue was affecting speed, consistency, and scalability across core business operations.</p>
-
-                        <p className="text-base font-semibold text-white">Automation Approach</p>
-                        <p className="text-sm leading-relaxed text-slate-300">{highlightKeywords(selectedProject.solution)}</p>
-                        <p className="text-xs text-slate-400">This architecture was designed to reduce repetitive tasks and increase delivery reliability.</p>
-                      </section>
-
-                      <section className="space-y-3 rounded-2xl border border-cyan-300/15 bg-white/5 p-5">
-                        <h3 className="text-lg font-bold text-white">Workflow Diagram</h3>
-                        <WorkflowDiagram steps={selectedProject.workflowDiagram} />
-                        <LiveWorkflowPreview steps={selectedProject.livePreview} />
-                        <WorkflowTimeline steps={selectedProject.timeline} />
-                      </section>
-
-                      <section className="space-y-3 rounded-2xl border border-cyan-300/15 bg-white/5 p-5">
-                        <h3 className="text-lg font-bold text-white">Technology Stack</h3>
-                        <div className="flex flex-wrap gap-2">
-                          {selectedProject.technologies.map((tech, index) => (
-                            <motion.span
-                              key={tech}
-                              initial={{ opacity: 0, scale: 0.9 }}
-                              animate={{ opacity: 1, scale: 1, y: [0, -3, 0] }}
-                              transition={{ delay: 0.04 * index, y: { duration: 3 + index * 0.1, repeat: Infinity, ease: 'easeInOut' } }}
-                              whileHover={{ y: -2, scale: 1.06 }}
-                              className="rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1 text-sm text-cyan-100 shadow-[0_0_12px_rgba(0,217,255,0.16)]"
-                            >
-                              {tech}
-                            </motion.span>
-                          ))}
-                        </div>
-                      </section>
-
-                      <section className="space-y-3 rounded-2xl border border-cyan-300/15 bg-white/5 p-5">
-                        <h3 className="text-lg font-bold text-white">Business Impact</h3>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          {selectedProject.businessBenefits.map((benefit, index) => (
-                            <motion.div
-                              key={benefit.label}
-                              initial={{ opacity: 0, y: 8 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              transition={{ delay: 0.06 * index }}
-                              whileHover={{ y: -3, boxShadow: '0 0 20px rgba(0,217,255,0.25)' }}
-                              className="rounded-xl border border-cyan-300/20 bg-gradient-to-br from-cyan-500/12 to-blue-500/10 px-3 py-2.5 text-sm font-semibold text-slate-100"
-                            >
-                              <span className="mr-1">{benefit.icon}</span>
-                              {benefit.label}
-                            </motion.div>
-                          ))}
-                        </div>
-                      </section>
-                    </div>
-
-                    <section className="mt-7 rounded-2xl border border-cyan-300/15 bg-white/5 p-5">
-                      <h3 className="mb-3 text-lg font-bold text-white">Future Improvements</h3>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                        {selectedProject.futureImprovements.map((item, index) => (
-                          <motion.div
-                            key={item}
-                            initial={{ opacity: 0, y: 8 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.05 * index }}
-                            whileHover={{ y: -2 }}
-                            className="rounded-xl border border-purple-300/25 bg-gradient-to-br from-purple-500/14 to-cyan-500/10 px-3 py-2.5 text-sm font-medium text-slate-200"
-                          >
-                            {item}
-                          </motion.div>
-                        ))}
-                      </div>
-                    </section>
-                  </div>
-
-                  <div className="border-t border-cyan-300/15 px-5 py-4 sm:px-8 sm:py-5 bg-white/[0.03] flex flex-col sm:flex-row gap-3 sm:justify-end">
-                    <button
-                      type="button"
-                      disabled
-                      className="rounded-xl border border-slate-500/40 bg-slate-500/15 px-5 py-2.5 text-sm font-semibold text-slate-400 cursor-not-allowed"
-                    >
-                      Github (Coming Soon)
-                    </button>
-                    <button
-                      type="button"
-                      disabled
-                      className="rounded-xl border border-slate-500/40 bg-slate-500/15 px-5 py-2.5 text-sm font-semibold text-slate-400 cursor-not-allowed"
-                    >
-                      Live Demo (Coming Soon)
-                    </button>
-                    <motion.button
-                      type="button"
-                      onClick={() => setSelectedProject(null)}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      className="rounded-xl border border-cyan-300/35 bg-gradient-to-r from-cyan-500/30 to-blue-500/30 px-5 py-2.5 text-sm font-semibold text-white"
-                    >
-                      Close
-                    </motion.button>
-                  </div>
+        {selected && (
+          <motion.div className="fixed inset-0 z-[90] grid place-items-center bg-slate-950/80 p-3 backdrop-blur-md sm:p-6" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onMouseDown={(event) => event.target === event.currentTarget && setSelected(null)}>
+            <motion.div role="dialog" aria-modal="true" aria-labelledby="project-dialog-title" initial={reduceMotion ? false : { opacity: 0, y: 24, scale: 0.98 }} animate={{ opacity: 1, y: 0, scale: 1 }} exit={{ opacity: 0, y: 16, scale: 0.99 }} className="max-h-[92vh] w-full max-w-4xl overflow-y-auto rounded-[1.75rem] border border-cyan-300/15 bg-[#07101f] shadow-2xl">
+              <div className="sticky top-0 z-10 flex items-center justify-between border-b border-white/10 bg-[#07101f]/95 px-5 py-4 backdrop-blur sm:px-7">
+                <span className="text-xs font-semibold uppercase tracking-[0.18em] text-cyan-300">Case study</span>
+                <button type="button" onClick={() => setSelected(null)} aria-label="Close project details" className="focus-ring rounded-full border border-white/10 px-4 py-2 text-sm text-slate-300 hover:text-white">Close</button>
+              </div>
+              <div className="p-6 sm:p-9">
+                <div className="flex flex-wrap items-center gap-3"><span className="rounded-full border border-emerald-300/20 bg-emerald-300/10 px-3 py-1 text-xs text-emerald-200">{selected.status}</span><span className="text-sm text-slate-500">{selected.category}</span></div>
+                <h3 id="project-dialog-title" className="mt-5 text-3xl font-semibold tracking-tight text-white sm:text-4xl">{selected.title}</h3>
+                <p className="mt-4 max-w-2xl text-base leading-7 text-slate-300">{selected.summary}</p>
+                <div className="mt-9 overflow-x-auto rounded-2xl border border-white/10 bg-slate-950/70 p-5"><p className="mb-5 text-xs uppercase tracking-wider text-slate-500">Designed architecture representation</p><Flow nodes={selected.nodes} reducedMotion={reduceMotion} /></div>
+                <div className="mt-9 grid gap-7 md:grid-cols-2">
+                  <div><h4 className="text-sm font-semibold uppercase tracking-wider text-cyan-200">The problem</h4><p className="mt-3 text-sm leading-7 text-slate-400">{selected.problem}</p></div>
+                  <div><h4 className="text-sm font-semibold uppercase tracking-wider text-cyan-200">Workflow approach</h4><p className="mt-3 text-sm leading-7 text-slate-400">{selected.approach}</p></div>
                 </div>
-              </motion.div>
+                <div className="mt-8 border-t border-white/10 pt-7"><h4 className="text-sm font-semibold text-white">Workflow considerations</h4><ul className="mt-4 grid gap-3 sm:grid-cols-2">{selected.features.map((feature) => <li key={feature} className="flex gap-3 text-sm text-slate-400"><span className="text-cyan-300">◆</span>{feature}</li>)}</ul></div>
+                <div className="mt-8 flex flex-wrap gap-2">{selected.stack.map((tool) => <span key={tool} className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs text-slate-300">{tool}</span>)}</div>
+                {selected.proposed ? (
+                  <p className="mt-7 text-xs leading-5 text-violet-200/70">Illustrative proposal only: integrations, implementation, and outcomes are not represented as completed or deployed.</p>
+                ) : (
+                  <p className="mt-7 text-xs leading-5 text-slate-500">This walkthrough describes the workflow without presenting a fabricated application interface or unverified outcome metrics.</p>
+                )}
+              </div>
             </motion.div>
-          </>
+          </motion.div>
         )}
       </AnimatePresence>
-
-      <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[rgba(0,217,255,0.2)] to-transparent" />
     </section>
   );
 });
 
 Projects.displayName = 'Projects';
-
 export default Projects;

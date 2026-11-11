@@ -1,15 +1,38 @@
-import React, { memo, useState } from 'react';
-import { motion } from 'framer-motion';
+import { memo, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import SectionBackground from '../components/SectionBackground';
 import BookCallModal from '../components/BookCallModal';
+import MagneticButton from '../components/MagneticButton';
 
-const WEBHOOK_URL = import.meta.env.VITE_CONTACT_WEBHOOK_URL || 'PASTE_YOUR_WEBHOOK_HERE';
+const WEBHOOK_URL = import.meta.env.VITE_CONTACT_WEBHOOK_URL || '';
+
+const buildMailtoLink = (payload) => {
+  const recipient = 'dikshachauhan9201@gmail.com';
+  const subject = encodeURIComponent(`Portfolio inquiry from ${payload.name || 'New contact'}`);
+  const body = encodeURIComponent(
+    [
+      `Name: ${payload.name}`,
+      `Email: ${payload.email}`,
+      payload.company ? `Company: ${payload.company}` : '',
+      payload.phone ? `Phone: ${payload.phone}` : '',
+      '',
+      'Project details:',
+      payload.message,
+      '',
+      `Submitted at: ${payload.submittedAt}`,
+    ]
+      .filter(Boolean)
+      .join('\n')
+  );
+
+  return `mailto:${recipient}?subject=${subject}&body=${body}`;
+};
 
 const submitContactToWebhook = async (payload) => {
-  // Allows UI testing before webhook is configured. Replace WEBHOOK_URL to enable real submission.
-  if (!WEBHOOK_URL || WEBHOOK_URL === 'PASTE_YOUR_WEBHOOK_HERE') {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return { ok: true, mocked: true };
+  if (!WEBHOOK_URL) {
+    const mailtoLink = buildMailtoLink(payload);
+    window.location.href = mailtoLink;
+    return { ok: true, fallback: true };
   }
 
   const response = await fetch(WEBHOOK_URL, {
@@ -28,6 +51,7 @@ const submitContactToWebhook = async (payload) => {
 };
 
 const Contact = memo(() => {
+  const reduceMotion = useReducedMotion();
   const [formState, setFormState] = useState({
     name: '',
     email: '',
@@ -114,11 +138,17 @@ const Contact = memo(() => {
 
     try {
       setIsSubmitting(true);
-      await submitContactToWebhook(payload);
+      const result = await submitContactToWebhook(payload);
       setFormState({ name: '', email: '', company: '', phone: '', message: '' });
       setErrors({});
-      showToast('success', 'Thank you! Your message has been sent.');
+      showToast(
+        'success',
+        result?.fallback
+          ? 'Your email draft is ready. Send it to connect with me.'
+          : 'Thank you! Your message has been sent.'
+      );
     } catch (error) {
+      console.error('Contact form submission failed.', error);
       showToast('error', 'Something went wrong. Please try again.');
     } finally {
       setIsSubmitting(false);
@@ -139,9 +169,9 @@ const Contact = memo(() => {
   };
 
   const contactInfo = [
-    { icon: '📧', label: 'Email', value: 'dikshachauhan9201@gmail.com', href: 'mailto:dikshachauhan9201@gmail.com' },
-    { icon: '💬', label: 'Phone', value: '+91 9217682198', href: 'tel:+919217682198' },
-    { icon: '🇮🇳', label: 'Location', value: 'India' },
+    { icon: '@', label: 'Email', value: 'dikshachauhan9201@gmail.com', href: 'mailto:dikshachauhan9201@gmail.com' },
+    { icon: 'TEL', label: 'Phone', value: '+91 9217682198', href: 'tel:+919217682198' },
+    { icon: 'IN', label: 'Location', value: 'India' },
   ];
 
   const socialLinks = [
@@ -151,22 +181,22 @@ const Contact = memo(() => {
   ];
 
   return (
-    <section id="contact" className="relative w-full min-h-screen flex items-center justify-center py-24 px-4 md:px-8 bg-[#030712] overflow-hidden">
+    <section id="contact" className="relative w-full flex items-center justify-center overflow-hidden bg-[#070612] px-4 py-20 sm:py-24 md:px-8">
       {/* Section Background */}
       <SectionBackground variant="contact" />
 
       <motion.div
         variants={containerVariants}
-        initial="initial"
-        whileInView="animate"
+        initial={reduceMotion ? false : 'initial'}
+        whileInView={reduceMotion ? undefined : 'animate'}
         viewport={{ once: true, amount: 0.15 }}
         className="max-w-6xl mx-auto w-full relative z-10"
       >
         {toast && (
           <motion.div
-            initial={{ opacity: 0, y: -12, scale: 0.96 }}
+            initial={reduceMotion ? false : { opacity: 0, y: -12, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -12, scale: 0.96 }}
+            exit={reduceMotion ? undefined : { opacity: 0, y: -12, scale: 0.96 }}
             className={`fixed right-5 top-5 z-[90] rounded-xl border px-4 py-3 text-sm font-semibold shadow-lg backdrop-blur-xl ${
               toast.type === 'success'
                 ? 'border-[rgba(0,217,255,0.4)] bg-[rgba(0,217,255,0.14)] text-[#b7f7ff]'
@@ -181,46 +211,44 @@ const Contact = memo(() => {
         )}
 
         {/* Section Header */}
-        <motion.div variants={itemVariants} className="text-center mb-20">
-          <motion.h2 className="text-5xl md:text-6xl font-bold mb-6 tracking-tight leading-tight">
-            <span className="bg-gradient-to-r from-[#0099ff] via-[#00d9ff] to-[#a855f7] bg-clip-text text-transparent">
-              Let's Connect
-            </span>
+        <motion.div variants={itemVariants} className="mb-12 max-w-3xl border-b border-white/10 pb-10 sm:mb-16 sm:pb-12">
+          <p className="section-kicker">Start a conversation</p>
+          <motion.h2 className="mt-4 text-[clamp(2.4rem,6vw,4rem)] font-semibold leading-[1.05] tracking-[-0.05em] text-white">
+            Let&apos;s make the work flow.
           </motion.h2>
-          <motion.div className="h-1.5 w-24 bg-gradient-to-r from-[#0099ff] to-[#00d9ff] mx-auto rounded-full mb-6" />
-          <p className="text-gray-300 text-lg max-w-2xl mx-auto leading-relaxed font-light">
-            Have a project in mind? Let's discuss how I can automate and scale your business.
+          <p className="mt-5 max-w-2xl text-base leading-7 text-slate-300 sm:text-lg sm:leading-8">
+            Have a process worth improving? Let&apos;s talk about practical n8n automation, useful AI integrations, and a clear path from request to action.
           </p>
           
           {/* Book a Call Button */}
-          <motion.button
-            type="button"
+          <MagneticButton
+            as={motion.button}
             onClick={() => setIsBookCallOpen(true)}
-            initial={{ opacity: 0, y: 10 }}
+            initial={reduceMotion ? false : { opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            whileHover={{ scale: 1.05, y: -3 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={reduceMotion ? undefined : { scale: 1.04, y: -2 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.98 }}
             aria-label="Open book a discovery call dialog"
-            className="mt-8 px-10 py-4 bg-gradient-to-r from-[#a855f7] to-[#0099ff] text-white font-semibold rounded-xl shadow-lg shadow-[#a855f7]/30 hover:shadow-[#a855f7]/50 transition-all duration-300 flex items-center gap-3 mx-auto group relative overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
+            className="group relative mt-7 flex min-h-12 items-center gap-3 overflow-hidden rounded-full border border-violet-200/20 bg-gradient-to-r from-violet-500/90 to-fuchsia-500/80 px-6 py-3 font-semibold text-white shadow-[0_14px_34px_rgba(139,92,246,.18)] transition hover:shadow-[0_18px_40px_rgba(139,92,246,.26)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-200/70"
             style={{ willChange: 'transform, box-shadow' }}
           >
             {/* Ripple effect */}
             <motion.div
               className="absolute inset-0 bg-white opacity-0 group-hover:opacity-20"
-              initial={{ scale: 0 }}
-              whileHover={{ scale: 2 }}
-              transition={{ duration: 0.6 }}
+              initial={reduceMotion ? false : { scale: 0 }}
+              whileHover={reduceMotion ? undefined : { scale: 2 }}
+              transition={{ duration: reduceMotion ? 0 : 0.6 }}
             />
             
-            <span className="relative z-10">📞 Book a Discovery Call</span>
-          </motion.button>
+            <span className="relative z-10">Book a discovery call <span aria-hidden="true">↗</span></span>
+          </MagneticButton>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-16">
+        <div className="grid gap-10 lg:grid-cols-[0.85fr_1.15fr] lg:gap-16">
           {/* Contact Information */}
-          <motion.div variants={itemVariants} className="space-y-8">
-            <h3 className="text-2xl font-bold text-white mb-10 tracking-tight">Get in Touch</h3>
+          <motion.div variants={itemVariants} className="space-y-4">
+            <h3 className="mb-6 text-xl font-semibold tracking-tight text-white">Contact details</h3>
 
             {contactInfo.map((info, index) => {
               const CardTag = info.href ? motion.a : motion.div;
@@ -228,12 +256,12 @@ const Contact = memo(() => {
                 <CardTag
                   key={info.label}
                   href={info.href}
-                  initial={{ opacity: 0, x: -20, y: 10 }}
-                  whileInView={{ opacity: 1, x: 0, y: 0 }}
+                  initial={reduceMotion ? false : { opacity: 0, x: -20, y: 10 }}
+                  whileInView={reduceMotion ? undefined : { opacity: 1, x: 0, y: 0 }}
                   transition={{ delay: index * 0.1, duration: 0.5 }}
                   viewport={{ once: true }}
-                  whileHover={{ x: 12, transition: { duration: 0.3 } }}
-                  className="group relative flex items-center gap-6 p-6 rounded-2xl bg-gradient-to-br from-[rgba(0,153,255,0.08)] to-[rgba(168,85,247,0.04)] border border-[rgba(0,217,255,0.15)] hover:border-[rgba(0,217,255,0.4)] transition-all duration-300 shadow-lg shadow-[rgba(0,153,255,0.05)] hover:shadow-[rgba(0,217,255,0.15)] overflow-hidden"
+                  whileHover={reduceMotion ? undefined : { x: 5, transition: { duration: 0.25 } }}
+                  className="group relative flex min-w-0 items-center gap-4 overflow-hidden rounded-2xl border border-white/[0.08] bg-white/[0.025] p-4 transition-all duration-300 hover:border-violet-300/25 hover:bg-violet-300/[0.04] sm:p-5"
                   style={{ willChange: 'transform, border-color, box-shadow' }}
                 >
                   {/* Hover glow */}
@@ -241,10 +269,10 @@ const Contact = memo(() => {
                     className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-500 bg-gradient-to-br from-[#0099ff] to-[#a855f7]"
                   />
 
-                  <span className="text-4xl group-hover:scale-125 transition-transform duration-300 relative z-10">{info.icon}</span>
+                  <span className="relative z-10 grid h-11 w-11 shrink-0 place-items-center rounded-xl border border-violet-300/15 bg-violet-300/[0.06] text-2xl transition-transform duration-300 group-hover:scale-105">{info.icon}</span>
                   <div className="relative z-10">
-                    <p className="text-gray-400 text-sm font-medium tracking-wide">{info.label}</p>
-                    <p className="text-white font-bold text-lg group-hover:text-[#00d9ff] transition-colors">
+                    <p className="text-slate-500 text-xs font-medium uppercase tracking-[0.14em]">{info.label}</p>
+                    <p className="mt-1 break-all text-sm font-semibold text-slate-100 transition-colors group-hover:text-violet-100 sm:text-base">
                       {info.value}
                     </p>
                   </div>
@@ -254,13 +282,13 @@ const Contact = memo(() => {
 
             {/* Social Links */}
             <motion.div
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
+              initial={reduceMotion ? false : { opacity: 0 }}
+              whileInView={reduceMotion ? undefined : { opacity: 1 }}
               transition={{ delay: 0.4 }}
               viewport={{ once: true }}
-              className="pt-10"
+              className="pt-6"
             >
-              <p className="text-gray-400 text-sm mb-5 font-medium tracking-wide">Follow on social</p>
+              <p className="mb-4 text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">Elsewhere</p>
               <div className="flex gap-4">
                 {socialLinks.map((social) => (
                   <motion.a
@@ -268,9 +296,9 @@ const Contact = memo(() => {
                     href={social.href}
                     target={social.name === 'LinkedIn' ? '_blank' : undefined}
                     rel={social.name === 'LinkedIn' ? 'noopener noreferrer' : undefined}
-                    whileHover={{ scale: 1.2, y: -6 }}
-                    whileTap={{ scale: 0.9 }}
-                    className="w-12 h-12 rounded-full bg-gradient-to-br from-[#0099ff] to-[#00d9ff] flex items-center justify-center text-white font-bold shadow-lg shadow-[#00d9ff]/25 hover:shadow-[#00d9ff]/50 transition-all"
+                    whileHover={reduceMotion ? undefined : { scale: 1.04, y: -2 }}
+                    whileTap={reduceMotion ? undefined : { scale: 0.98 }}
+                    className="focus-ring flex h-11 w-11 items-center justify-center rounded-full border border-white/10 bg-white/[0.035] text-sm font-semibold text-violet-100 transition hover:border-violet-200/30 hover:bg-violet-300/10"
                     style={{ willChange: 'transform, box-shadow' }}
                   >
                     {social.label}
@@ -284,11 +312,15 @@ const Contact = memo(() => {
           <motion.form
             variants={itemVariants}
             onSubmit={handleSubmit}
-            className="space-y-6"
+            className="space-y-5 rounded-[1.5rem] border border-white/[0.08] bg-[#0d0b19]/85 p-5 shadow-[0_24px_70px_rgba(0,0,0,.2)] sm:p-8"
             noValidate
           >
+            <div className="mb-2">
+              <h3 className="text-xl font-semibold tracking-tight text-white">Tell me what you&apos;re working on</h3>
+              <p className="mt-2 text-sm leading-6 text-slate-400">A little context helps me understand the process and the kind of automation you need.</p>
+            </div>
             {/* Name Input */}
-            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: 0.1 }} viewport={{ once: true }}>
+            <motion.div initial={reduceMotion ? false : { opacity: 0 }} whileInView={reduceMotion ? undefined : { opacity: 1 }} transition={{ delay: 0.1 }} viewport={{ once: true }}>
               <label htmlFor="contact-name" className="block text-sm font-semibold text-gray-300 mb-3 tracking-wide">Full Name</label>
               <input
                 id="contact-name"
@@ -306,7 +338,7 @@ const Contact = memo(() => {
             </motion.div>
 
             {/* Email Input */}
-            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: 0.15 }} viewport={{ once: true }}>
+            <motion.div initial={reduceMotion ? false : { opacity: 0 }} whileInView={reduceMotion ? undefined : { opacity: 1 }} transition={{ delay: 0.15 }} viewport={{ once: true }}>
               <label htmlFor="contact-email" className="block text-sm font-semibold text-gray-300 mb-3 tracking-wide">Email Address</label>
               <input
                 id="contact-email"
@@ -324,7 +356,7 @@ const Contact = memo(() => {
             </motion.div>
 
             {/* Company Input */}
-            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: 0.2 }} viewport={{ once: true }}>
+            <motion.div initial={reduceMotion ? false : { opacity: 0 }} whileInView={reduceMotion ? undefined : { opacity: 1 }} transition={{ delay: 0.2 }} viewport={{ once: true }}>
               <label htmlFor="contact-company" className="block text-sm font-semibold text-gray-300 mb-3 tracking-wide">Company (Optional)</label>
               <input
                 id="contact-company"
@@ -339,7 +371,7 @@ const Contact = memo(() => {
             </motion.div>
 
             {/* Phone Input */}
-            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: 0.23 }} viewport={{ once: true }}>
+            <motion.div initial={reduceMotion ? false : { opacity: 0 }} whileInView={reduceMotion ? undefined : { opacity: 1 }} transition={{ delay: 0.23 }} viewport={{ once: true }}>
               <label htmlFor="contact-phone" className="block text-sm font-semibold text-gray-300 mb-3 tracking-wide">Phone (Optional)</label>
               <input
                 id="contact-phone"
@@ -357,7 +389,7 @@ const Contact = memo(() => {
             </motion.div>
 
             {/* Message Input */}
-            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: 0.25 }} viewport={{ once: true }}>
+            <motion.div initial={reduceMotion ? false : { opacity: 0 }} whileInView={reduceMotion ? undefined : { opacity: 1 }} transition={{ delay: 0.25 }} viewport={{ once: true }}>
               <label htmlFor="contact-message" className="block text-sm font-semibold text-gray-300 mb-3 tracking-wide">Message</label>
               <textarea
                 id="contact-message"
@@ -375,27 +407,28 @@ const Contact = memo(() => {
 
             {/* Submit Button */}
             <motion.button
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
+              initial={reduceMotion ? false : { opacity: 0 }}
+              whileInView={reduceMotion ? undefined : { opacity: 1 }}
               transition={{ delay: 0.3 }}
               viewport={{ once: true }}
-              whileHover={{ scale: 1.03, y: -2 }}
-              whileTap={{ scale: 0.98 }}
+              whileHover={reduceMotion ? undefined : { scale: 1.03, y: -2 }}
+              whileTap={reduceMotion ? undefined : { scale: 0.98 }}
               type="submit"
               disabled={isSubmitting}
               aria-label="Send contact form"
-              className="w-full py-4 bg-gradient-to-r from-[#0099ff] to-[#00d9ff] text-white font-bold rounded-lg shadow-lg shadow-[#00d9ff]/30 hover:shadow-[#00d9ff]/50 disabled:opacity-70 disabled:cursor-not-allowed transition-all duration-300 mt-8 tracking-wide flex items-center justify-center gap-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
+              className="focus-ring mt-3 flex min-h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 py-3 font-semibold tracking-wide text-white shadow-[0_12px_28px_rgba(139,92,246,.16)] transition hover:brightness-110 disabled:cursor-not-allowed disabled:opacity-70"
               style={{ willChange: 'transform, box-shadow' }}
             >
               {isSubmitting && (
                 <motion.span
                   className="inline-block h-4 w-4 rounded-full border-2 border-white/80 border-t-transparent"
-                  animate={{ rotate: 360 }}
+                  animate={reduceMotion ? undefined : { rotate: 360 }}
                   transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}
                 />
               )}
-              {isSubmitting ? 'Sending...' : 'Send Message'}
+              {isSubmitting ? 'Preparing...' : WEBHOOK_URL ? 'Send message' : 'Prepare email draft'}
             </motion.button>
+            {!WEBHOOK_URL && <p className="text-xs leading-5 text-slate-500">This site has no contact backend configured. Submitting opens a prefilled email draft for you to review and send.</p>}
           </motion.form>
         </div>
       </motion.div>

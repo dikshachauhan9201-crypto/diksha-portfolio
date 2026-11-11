@@ -1,16 +1,10 @@
-import React, { memo } from 'react';
-import { motion } from 'framer-motion';
+import { memo } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { scrollToAndHighlight } from '../utils/scroll';
 
 const Footer = memo(() => {
   const currentYear = new Date().getFullYear();
-  const stars = Array.from({ length: 36 }).map((_, index) => ({
-    id: index,
-    left: (index * 17) % 100,
-    top: (index * 23) % 100,
-    size: ((index % 3) + 1) * 0.9,
-    duration: 4 + (index % 7),
-  }));
+  const reduceMotion = useReducedMotion();
 
   const quickLinks = [
     { name: 'Home', href: '#home' },
@@ -18,6 +12,7 @@ const Footer = memo(() => {
     { name: 'Services', href: '#services' },
     { name: 'Skills', href: '#skills' },
     { name: 'Projects', href: '#projects' },
+    { name: 'Web', href: '#web-development' },
     { name: 'Contact', href: '#contact' },
   ];
 
@@ -25,7 +20,6 @@ const Footer = memo(() => {
     { name: 'Email', href: 'mailto:dikshachauhan9201@gmail.com' },
     { name: 'Phone', href: 'tel:+919217682198' },
     { name: 'LinkedIn', href: 'https://linkedin.com/in/diksha-chauhan-465559403' },
-    { name: 'GitHub (Coming Soon)', href: null },
     { name: 'Resume', href: '/resume.pdf', download: true },
   ];
 
@@ -62,7 +56,7 @@ const Footer = memo(() => {
       {/* Subtle Background Glow */}
       <motion.div
         className="absolute inset-0 opacity-30 pointer-events-none"
-        animate={{
+        animate={reduceMotion ? undefined : {
           background: [
             'radial-gradient(800px at 50% 50%, rgba(0, 153, 255, 0.03) 0%, transparent 100%)',
             'radial-gradient(800px at 100% 50%, rgba(168, 85, 247, 0.03) 0%, transparent 100%)',
@@ -72,39 +66,23 @@ const Footer = memo(() => {
         transition={{ duration: 15, repeat: Infinity }}
       />
 
-      {stars.map((star) => (
-        <motion.div
-          key={star.id}
-          className="absolute rounded-full bg-white pointer-events-none"
-          style={{
-            left: `${star.left}%`,
-            top: `${star.top}%`,
-            width: `${star.size}px`,
-            height: `${star.size}px`,
-            opacity: 0.12,
-          }}
-          animate={{ opacity: [0.08, 0.32, 0.08], y: [0, -2, 0] }}
-          transition={{ duration: star.duration, repeat: Infinity, ease: 'easeInOut' }}
-        />
-      ))}
-
       {/* Main Content */}
       <motion.div
         variants={containerVariants}
-        initial="initial"
-        whileInView="animate"
+        initial={reduceMotion ? false : 'initial'}
+        whileInView={reduceMotion ? undefined : 'animate'}
         viewport={{ once: true, amount: 0.2 }}
         className="max-w-7xl mx-auto px-4 md:px-8 py-16 relative z-10"
       >
         {/* Footer Grid */}
-        <div className="grid md:grid-cols-4 gap-12 mb-12">
+        <div         className="mb-12 grid gap-9 sm:grid-cols-2 lg:grid-cols-4 lg:gap-10">
           {/* Brand Column */}
           <motion.div variants={itemVariants} className="col-span-1">
             <h3 className="text-2xl font-bold bg-gradient-to-r from-[#0099ff] to-[#00d9ff] bg-clip-text text-transparent mb-4">
               Diksha
             </h3>
             <p className="text-gray-400 text-sm leading-relaxed font-light">
-              AI Automation Specialist transforming businesses through intelligent solutions and cutting-edge technology.
+              AI Automation Engineer focused on n8n workflow engineering, practical AI integrations, and reliable business automation.
             </p>
           </motion.div>
 
@@ -116,7 +94,7 @@ const Footer = memo(() => {
                   <motion.a
                     href={link.href}
                     onClick={(event) => handleQuickLinkClick(event, link.href)}
-                    whileHover={{ x: 4, color: '#00d9ff' }}
+                    whileHover={reduceMotion ? undefined : { x: 4, color: '#00d9ff' }}
                     aria-label={`Go to ${link.name} section`}
                     className="text-gray-400 text-sm hover:text-[#00d9ff] transition-colors duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 rounded"
                   >
@@ -137,7 +115,7 @@ const Footer = memo(() => {
                     download={resource.download ? 'Diksha-Chauhan-Resume.pdf' : undefined}
                     target={resource.name === 'LinkedIn' ? '_blank' : undefined}
                     rel={resource.name === 'LinkedIn' ? 'noopener noreferrer' : undefined}
-                    whileHover={{ x: 4, color: '#00d9ff' }}
+                    whileHover={reduceMotion ? undefined : { x: 4, color: '#00d9ff' }}
                     aria-label={resource.href ? resource.name : `${resource.name} not available yet`}
                     className="text-gray-400 text-sm hover:text-[#00d9ff] transition-colors duration-300 block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70 rounded"
                   >
@@ -162,8 +140,8 @@ const Footer = memo(() => {
                   href={link.href}
                   target={link.name === 'LinkedIn' ? '_blank' : undefined}
                   rel={link.name === 'LinkedIn' ? 'noopener noreferrer' : undefined}
-                  whileHover={{ scale: 1.15, y: -4 }}
-                  whileTap={{ scale: 0.9 }}
+                  whileHover={reduceMotion ? undefined : { scale: 1.04, y: -2 }}
+                  whileTap={reduceMotion ? undefined : { scale: 0.98 }}
                   aria-label={link.name}
                   className="w-10 h-10 rounded-full bg-gradient-to-br from-[rgba(0,153,255,0.15)] to-[rgba(168,85,247,0.1)] border border-[rgba(0,217,255,0.2)] flex items-center justify-center text-[#00d9ff] hover:border-[rgba(0,217,255,0.4)] hover:bg-gradient-to-br hover:from-[rgba(0,153,255,0.25)] hover:to-[rgba(168,85,247,0.15)] transition-all duration-300 font-semibold text-sm"
                   title={link.name}
@@ -177,9 +155,9 @@ const Footer = memo(() => {
         </div>
 
         <motion.div
-          initial={{ scaleX: 0 }}
-          whileInView={{ scaleX: 1 }}
-          transition={{ duration: 0.8 }}
+          initial={reduceMotion ? false : { scaleX: 0 }}
+          whileInView={reduceMotion ? undefined : { scaleX: 1 }}
+          transition={{ duration: reduceMotion ? 0 : 0.8 }}
           viewport={{ once: true }}
           className="h-px bg-gradient-to-r from-transparent via-[rgba(0,217,255,0.2)] to-transparent mb-8 origin-left"
         />
@@ -195,8 +173,8 @@ const Footer = memo(() => {
           <motion.button
             variants={itemVariants}
             onClick={scrollToTop}
-            whileHover={{ scale: 1.1, y: -4 }}
-            whileTap={{ scale: 0.95 }}
+            whileHover={reduceMotion ? undefined : { scale: 1.04, y: -2 }}
+            whileTap={reduceMotion ? undefined : { scale: 0.98 }}
             type="button"
             aria-label="Back to top"
             className="px-6 py-2.5 rounded-full bg-gradient-to-r from-[#0099ff] to-[#00d9ff] text-white text-sm font-semibold shadow-lg shadow-[#00d9ff]/20 hover:shadow-[#00d9ff]/40 transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-300/70"
@@ -210,7 +188,7 @@ const Footer = memo(() => {
       {/* Top Border Glow */}
       <motion.div
         className="absolute top-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-[rgba(0,217,255,0.3)] to-transparent"
-        animate={{ opacity: [0.3, 0.6, 0.3] }}
+        animate={reduceMotion ? undefined : { opacity: [0.3, 0.6, 0.3] }}
         transition={{ duration: 4, repeat: Infinity }}
       />
     </footer>

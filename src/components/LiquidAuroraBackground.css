@@ -1,0 +1,147 @@
+.liquid-aurora {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse at 74% 14%, rgb(8 145 178 / 0.1), transparent 34%),
+    radial-gradient(ellipse at 24% 54%, rgb(79 70 229 / 0.09), transparent 38%),
+    radial-gradient(ellipse at 78% 86%, rgb(14 116 144 / 0.08), transparent 36%);
+}
+
+.liquid-aurora__svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  opacity: 0.96;
+}
+
+.liquid-aurora__ribbon {
+  transform-box: fill-box;
+  transform-origin: center;
+  will-change: transform;
+  mix-blend-mode: screen;
+}
+
+.liquid-aurora__ribbon--main {
+  animation: aurora-main-drift 28s ease-in-out infinite;
+}
+
+.liquid-aurora__ribbon--violet {
+  animation: aurora-violet-drift 36s ease-in-out infinite;
+}
+
+.liquid-aurora__ribbon--distant {
+  opacity: 0.72;
+  animation: aurora-distant-drift 46s ease-in-out infinite;
+}
+
+.liquid-aurora__ribbon--backflow {
+  opacity: 0.68;
+  animation: aurora-backflow-drift 40s ease-in-out infinite;
+}
+
+.liquid-aurora__glow {
+  fill: none;
+  stroke: #22d3ee;
+  stroke-width: 44;
+  opacity: 0.25;
+  filter: url(#aurora-soft-glow);
+}
+
+.liquid-aurora__edge {
+  fill: none;
+  stroke: #67e8f9;
+  stroke-width: 1.8;
+  stroke-opacity: 0.52;
+}
+
+.liquid-aurora__edge--violet {
+  stroke: #c4b5fd;
+  stroke-opacity: 0.32;
+  stroke-width: 1.5;
+}
+
+.liquid-aurora__edge--distant {
+  stroke: #67e8f9;
+  stroke-opacity: 0.24;
+  stroke-width: 1.3;
+}
+
+.liquid-aurora__travel {
+  fill: none;
+  stroke: url(#aurora-highlight);
+  stroke-dasharray: 170 830;
+  stroke-dashoffset: 1000;
+  stroke-linecap: round;
+  stroke-width: 3;
+  opacity: 0.8;
+  animation: aurora-light-travel 18s linear infinite;
+}
+
+.liquid-aurora__travel--violet {
+  stroke: url(#aurora-violet-highlight);
+  stroke-width: 2.3;
+  opacity: 0.65;
+  animation-duration: 21s;
+  animation-delay: -7s;
+}
+
+@keyframes aurora-main-drift {
+  0%, 100% { transform: translate3d(-0.45%, 0.15%, 0) scale(1); }
+  50% { transform: translate3d(0.65%, -0.45%, 0) scale(1.012); }
+}
+
+@keyframes aurora-violet-drift {
+  0%, 100% { transform: translate3d(0.5%, -0.2%, 0) scale(1.01); }
+  50% { transform: translate3d(-0.55%, 0.35%, 0) scale(1); }
+}
+
+@keyframes aurora-distant-drift {
+  0%, 100% { transform: translate3d(-0.3%, 0.1%, 0) scale(1); }
+  50% { transform: translate3d(0.4%, -0.25%, 0) scale(1.008); }
+}
+
+@keyframes aurora-backflow-drift {
+  0%, 100% { transform: translate3d(0.4%, 0.2%, 0) scale(1.005); }
+  50% { transform: translate3d(-0.35%, -0.2%, 0) scale(1); }
+}
+
+@keyframes aurora-light-travel {
+  to { stroke-dashoffset: 0; }
+}
+
+@media (max-width: 640px) {
+  .liquid-aurora {
+    background:
+      radial-gradient(ellipse at 72% 16%, rgb(8 145 178 / 0.09), transparent 36%),
+      radial-gradient(ellipse at 24% 58%, rgb(79 70 229 / 0.08), transparent 40%);
+  }
+
+  .liquid-aurora__ribbon--backflow {
+    display: none;
+  }
+
+  .liquid-aurora__glow {
+    stroke-width: 32;
+    opacity: 0.2;
+  }
+
+  .liquid-aurora__travel {
+    stroke-width: 2.4;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .liquid-aurora__ribbon,
+  .liquid-aurora__travel {
+    animation: none;
+    transform: none;
+  }
+
+  .liquid-aurora__travel {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+  }
+}

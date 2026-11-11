@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback, memo } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect, useRef, useCallback, memo } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 
 // ============================================================================
 // NEURAL NETWORK NODE COMPONENT
@@ -458,8 +458,11 @@ const NeuralNetwork = memo(({ mousePos }) => {
 const AnimatedBackground = memo(() => {
   const [mousePos, setMousePos] = useState(null);
   const mousePosRef = useRef(null);
+  const reduceMotion = useReducedMotion();
 
   useEffect(() => {
+    if (reduceMotion) return undefined;
+
     let throttleTimeout = null;
 
     const handleMouseMove = (e) => {
@@ -483,7 +486,16 @@ const AnimatedBackground = memo(() => {
       window.removeEventListener('mousemove', handleMouseMove);
       if (throttleTimeout) clearTimeout(throttleTimeout);
     };
-  }, []);
+  }, [reduceMotion]);
+
+  if (reduceMotion) {
+    return (
+      <div className="pointer-events-none absolute inset-0 overflow-hidden bg-gradient-to-b from-[#020617] to-[#0a0e27]">
+        <div className="absolute inset-0 bg-[linear-gradient(rgba(103,232,249,.035)_1px,transparent_1px),linear-gradient(90deg,rgba(103,232,249,.035)_1px,transparent_1px)] bg-[size:42px_42px]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_70%_42%,rgba(139,92,246,.1),transparent_55%)]" />
+      </div>
+    );
+  }
 
   return (
     <div className="absolute inset-0 bg-[#020617] overflow-hidden">
